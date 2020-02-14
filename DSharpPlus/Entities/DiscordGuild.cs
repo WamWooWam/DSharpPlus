@@ -32,6 +32,9 @@ namespace DSharpPlus.Entities
         [JsonProperty("icon", NullValueHandling = NullValueHandling.Ignore)]
         public string IconHash { get; internal set; }
 
+        [JsonIgnore]
+        public bool Muted { get; set; }
+
         /// <summary>
         /// Gets the guild icon's url.
         /// </summary>
@@ -157,7 +160,7 @@ namespace DSharpPlus.Entities
         /// Gets a collection of this guild's roles.
         /// </summary>
         [JsonIgnore]
-        public IReadOnlyDictionary<ulong, DiscordRole> Roles => new ReadOnlyConcurrentDictionary<ulong, DiscordRole>(this._roles);
+        public IReadOnlyDictionary<ulong, DiscordRole> Roles => this._roles;
 
         [JsonProperty("roles", NullValueHandling = NullValueHandling.Ignore)]
         [JsonConverter(typeof(SnowflakeArrayAsDictionaryJsonConverter))]
@@ -167,7 +170,7 @@ namespace DSharpPlus.Entities
         /// Gets a collection of this guild's emojis.
         /// </summary>
         [JsonIgnore]
-        public IReadOnlyDictionary<ulong, DiscordEmoji> Emojis => new ReadOnlyConcurrentDictionary<ulong, DiscordEmoji>(this._emojis);
+        public IReadOnlyDictionary<ulong, DiscordEmoji> Emojis => this._emojis;
 
         [JsonProperty("emojis", NullValueHandling = NullValueHandling.Ignore)]
         [JsonConverter(typeof(SnowflakeArrayAsDictionaryJsonConverter))]
@@ -214,7 +217,7 @@ namespace DSharpPlus.Entities
         /// the voice state corresponds to.
         /// </summary>
         [JsonIgnore]
-        public IReadOnlyDictionary<ulong, DiscordVoiceState> VoiceStates => new ReadOnlyConcurrentDictionary<ulong, DiscordVoiceState>(this._voiceStates);
+        public IReadOnlyDictionary<ulong, DiscordVoiceState> VoiceStates => this._voiceStates;
 
         [JsonProperty("voice_states", NullValueHandling = NullValueHandling.Ignore)]
         [JsonConverter(typeof(SnowflakeArrayAsDictionaryJsonConverter))]
@@ -223,8 +226,8 @@ namespace DSharpPlus.Entities
         /// <summary>
         /// Gets a dictionary of all the members that belong to this guild. The dictionary's key is the member ID.
         /// </summary>
-        [JsonIgnore] // TODO overhead of => vs Lazy? it's a struct
-        public IReadOnlyDictionary<ulong, DiscordMember> Members => new ReadOnlyConcurrentDictionary<ulong, DiscordMember>(this._members);
+        [JsonIgnore] 
+        public IReadOnlyDictionary<ulong, DiscordMember> Members => this._members;
 
         [JsonProperty("members", NullValueHandling = NullValueHandling.Ignore)]
         [JsonConverter(typeof(SnowflakeArrayAsDictionaryJsonConverter))]
@@ -234,7 +237,7 @@ namespace DSharpPlus.Entities
         /// Gets a dictionary of all the channels associated with this guild. The dictionary's key is the channel ID.
         /// </summary>
         [JsonIgnore]
-        public IReadOnlyDictionary<ulong, DiscordChannel> Channels => new ReadOnlyConcurrentDictionary<ulong, DiscordChannel>(this._channels);
+        public IReadOnlyDictionary<ulong, DiscordChannel> Channels => this._channels;
 
         [JsonProperty("channels", NullValueHandling = NullValueHandling.Ignore)]
         [JsonConverter(typeof(SnowflakeArrayAsDictionaryJsonConverter))]
@@ -245,10 +248,7 @@ namespace DSharpPlus.Entities
         /// </summary>
         [JsonIgnore]
         public DiscordMember CurrentMember
-            => this._current_member_lazy.Value;
-
-        [JsonIgnore]
-        private Lazy<DiscordMember> _current_member_lazy;
+            => this._members.TryGetValue(this.Discord.CurrentUser.Id, out var member) ? member : null;        
 
         /// <summary>
         /// Gets the @everyone role for this guild.
@@ -295,21 +295,14 @@ namespace DSharpPlus.Entities
         public int? PremiumSubscriptionCount { get; internal set; }
         // Seriously discord?
 
-        // I need to work on this
-        // 
-        // /// <summary>
-        // /// Gets channels ordered in a manner in which they'd be ordered in the UI of the discord client.
-        // /// </summary>
-        // [JsonIgnore]
-        // public IEnumerable<DiscordChannel> OrderedChannels 
-        //    => this._channels.OrderBy(xc => xc.Parent?.Position).ThenBy(xc => xc.Type).ThenBy(xc => xc.Position);
+        [JsonIgnore]
+        public bool IsSynced { get; set; }
 
         [JsonIgnore]
-        internal bool IsSynced { get; set; }
+        public bool Unread => Channels.Values.Any(r => r.ReadState.Unread);
 
         internal DiscordGuild()
         {
-            this._current_member_lazy = new Lazy<DiscordMember>(() => this._members.TryGetValue(this.Discord.CurrentUser.Id, out var member) ? member : null);
         }
 
         #region Guild Methods
@@ -365,6 +358,23 @@ namespace DSharpPlus.Entities
                 mdl.AfkChannel.IfPresent(e => e?.Id), mdl.AfkTimeout, iconb64, mdl.Owner.IfPresent(e => e.Id), splashb64,
                 mdl.SystemChannel.IfPresent(e => e?.Id), mdl.AuditLogReason).ConfigureAwait(false);
         }
+
+        /// <summary>
+        /// Acknowledges all the messages in this guild. This is available to user tokens only.
+        /// </summary>
+        /// <returns></returns>
+        public Task AcknowledgeAsync()
+        {
+            if (Discord.Configuration.TokenType == TokenType.User)
+            {
+                return Discord.ApiClient.AcknowledgeGuildAsync(Id);
+            }
+
+            throw new InvalidOperationException("ACK can only be used when logged in as regular user.");
+        }
+
+        public Task SyncAsync() 
+            => Discord is DiscordClient dc ? dc.SyncGuildsAsync(this) : Task.CompletedTask;
 
         /// <summary>
         /// Bans a specified member from this guild.
@@ -619,14 +629,7 @@ namespace DSharpPlus.Entities
                 foreach (var xtm in tms)
                 {
                     var usr = new DiscordUser(xtm.User) { Discord = this.Discord };
-                    usr = this.Discord.UserCache.AddOrUpdate(xtm.User.Id, usr, (id, old) =>
-                    {
-                        old.Username = usr.Username;
-                        old.Discord = usr.Discord;
-                        old.AvatarHash = usr.AvatarHash;
-
-                        return old;
-                    });
+                    usr = this.Discord.UserCache.AddOrUpdate(xtm.User.Id, usr, (id, old) => Utilities.UpdateUser(old, usr));
 
                     recmbr.Add(new DiscordMember(xtm) { Discord = this.Discord, _guild_id = this.Id });
                 }
@@ -735,13 +738,7 @@ namespace DSharpPlus.Entities
                     AvatarHash = xau.AvatarHash
                 };
                 var xu = new DiscordUser(xtu) { Discord = this.Discord };
-                xu = this.Discord.UserCache.AddOrUpdate(xu.Id, xu, (id, old) =>
-                {
-                    old.Username = xu.Username;
-                    old.Discriminator = xu.Discriminator;
-                    old.AvatarHash = xu.AvatarHash;
-                    return old;
-                });
+                xu = this.Discord.UserCache.AddOrUpdate(xu.Id, xu, (id, old) => Utilities.UpdateUser(old, xu));
             }
 
             var ahr = alrs.SelectMany(xa => xa.Webhooks)
@@ -1663,6 +1660,12 @@ namespace DSharpPlus.Entities
             return this._channels.Values.Where(xc => xc.Type == ChannelType.Text)
                 .OrderBy(xc => xc.Position)
                 .FirstOrDefault(xc => (xc.PermissionsFor(this.CurrentMember) & DSharpPlus.Permissions.AccessChannels) == DSharpPlus.Permissions.AccessChannels);
+        }
+
+        public void RequestUserPresences(IEnumerable<DiscordUser> usersToSync)
+        {
+            if (Discord is DiscordClient client)
+                client.RequestUserPresences(this, usersToSync);
         }
         #endregion
 

@@ -16,12 +16,12 @@ namespace DSharpPlus.EventArgs
         /// <summary>
         /// Gets the new voice endpoint.
         /// </summary>
-		public string Endpoint { get; internal set; }
+		public string Endpoint { get; set; }
 
         /// <summary>
         /// Gets the voice connection token.
         /// </summary>
-        internal string VoiceToken { get; set; }
+        public string VoiceToken { get; set; }
 
         internal VoiceServerUpdateEventArgs(DiscordClient client) : base(client) { }
     }

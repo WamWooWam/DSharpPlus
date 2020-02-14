@@ -16,7 +16,6 @@ namespace DSharpPlus.Entities
         internal DiscordDmChannel()
             : base()
         {
-            this._recipients_lazy = new Lazy<IReadOnlyList<DiscordUser>>(() => new ReadOnlyCollection<DiscordUser>(this._recipients));
         }
 
         /// <summary>
@@ -24,12 +23,10 @@ namespace DSharpPlus.Entities
         /// </summary>
         [JsonProperty("recipient", NullValueHandling = NullValueHandling.Ignore)]
         public IReadOnlyList<DiscordUser> Recipients 
-            => this._recipients_lazy.Value;
+            => this._recipients;
 
         [JsonIgnore]
         internal List<DiscordUser> _recipients;
-        [JsonIgnore]
-        private Lazy<IReadOnlyList<DiscordUser>> _recipients_lazy;
 
         /// <summary>
         /// Gets the hash of this channel's icon.

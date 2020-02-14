@@ -44,12 +44,10 @@ namespace DSharpPlus.Entities
         /// </summary>
         [JsonIgnore]
         public Optional<DiscordColor> Color
-            => this._colorLazy.Value;
+            => this._color.HasValue ? Optional.FromValue<DiscordColor>(this._color.Value) : Optional.FromNoValue<DiscordColor>();
 
         [JsonProperty("color", NullValueHandling = NullValueHandling.Include)]
         internal Optional<int> _color;
-        [JsonIgnore]
-        private readonly Lazy<Optional<DiscordColor>> _colorLazy;
 
         /// <summary>
         /// Gets the embed's footer.
@@ -93,9 +91,11 @@ namespace DSharpPlus.Entities
         [JsonProperty("fields", NullValueHandling = NullValueHandling.Ignore)]
         public IReadOnlyList<DiscordEmbedField> Fields { get; internal set; }
 
+        [JsonIgnore]
+        public DiscordMessage Owner { get; internal set; }
+
         internal DiscordEmbed()
         {
-            this._colorLazy = new Lazy<Optional<DiscordColor>>(() => this._color.HasValue ? Optional.FromValue<DiscordColor>(this._color.Value) : Optional.FromNoValue<DiscordColor>());
         }
     }
 }

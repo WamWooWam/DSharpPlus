@@ -1,6 +1,6 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Runtime.CompilerServices;
-using Newtonsoft.Json;
 
 namespace DSharpPlus.Net
 {
@@ -78,11 +78,11 @@ namespace DSharpPlus.Net
                 var val = reader.Value;
                 if (val == null)
                     return null;
-                
+
                 if (!(val is string s))
                     throw new JsonReaderException("DiscordUri value invalid format! This is a bug in DSharpPlus. " +
                                                   $"Include the type in your bug report: [[{reader.TokenType}]]");
-                
+
                 return IsStandard(s)
                     ? new DiscordUri(new Uri(s))
                     : new DiscordUri(s);
@@ -90,6 +90,9 @@ namespace DSharpPlus.Net
 
             public override bool CanConvert(Type objectType) => objectType == typeof(DiscordUri);
         }
+
+        public static implicit operator Uri(DiscordUri uri) => uri.ToUri();
+        public static implicit operator DiscordUri(Uri uri) => new DiscordUri(uri);
     }
 
     public enum DiscordUriType : byte

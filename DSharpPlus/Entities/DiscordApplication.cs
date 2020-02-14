@@ -1,8 +1,8 @@
 ﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using System.Globalization;
+using System.Threading.Tasks;
 
 namespace DSharpPlus.Entities
 {
@@ -334,19 +334,13 @@ namespace DSharpPlus.Entities
         /// <summary>
         /// Gets the URL of this asset.
         /// </summary>
-        public override Uri Url
-            => this._url.Value;
-
-        private Lazy<Uri> _url;
+        public override Uri Url { get; }
 
         public DiscordSpotifyAsset()
         {
-            this._url = new Lazy<Uri>(() =>
-            {
-                var ids = this.Id.Split(':');
-                var id = ids[1];
-                return new Uri($"https://i.scdn.co/image/{id}");
-            });
+            var ids = this.Id.Split(':');
+            var id = ids[1];
+            Url = new Uri($"https://i.scdn.co/image/{id}");
         }
     }
 

@@ -6,9 +6,9 @@ namespace DSharpPlus.Entities
 {
     public partial class DiscordEmoji
     {
-        private static IReadOnlyDictionary<string, string> UnicodeEmojis { get; }
-        private static IReadOnlyDictionary<string, string> DiscordNameLookup { get; }
-        internal static IReadOnlyList<string> UnicodeEmojiList { get; }
+        public static IReadOnlyDictionary<string, string> UnicodeEmojis { get; }
+        public static IReadOnlyDictionary<string, string> DiscordNameLookup { get; }
+        public static IReadOnlyList<string> UnicodeEmojiList { get; }
 
         static DiscordEmoji()
         {

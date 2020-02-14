@@ -38,13 +38,13 @@ namespace DSharpPlus.Entities
         /// Gets the name of this channel.
         /// </summary>
         [JsonProperty("name", NullValueHandling = NullValueHandling.Ignore)]
-        public string Name { get; internal set; }
+        public virtual string Name { get; internal set; }
 
         /// <summary>
         /// Gets the type of this channel.
         /// </summary>
         [JsonProperty("type", NullValueHandling = NullValueHandling.Ignore)]
-        public ChannelType Type { get; internal set; }
+        public virtual ChannelType Type { get; internal set; }
 
         /// <summary>
         /// Gets the position of this channel.
@@ -78,18 +78,16 @@ namespace DSharpPlus.Entities
         /// </summary>
         [JsonIgnore]
         public IReadOnlyList<DiscordOverwrite> PermissionOverwrites 
-            => this._permissionOverwritesLazy.Value;
+            => this._permissionOverwrites;
 
         [JsonProperty("permission_overwrites", NullValueHandling = NullValueHandling.Ignore)]
         internal List<DiscordOverwrite> _permissionOverwrites = new List<DiscordOverwrite>();
-        [JsonIgnore]
-        private Lazy<IReadOnlyList<DiscordOverwrite>> _permissionOverwritesLazy;
 
         /// <summary>
         /// Gets the channel's topic. This is applicable to text channels only.
         /// </summary>
         [JsonProperty("topic", NullValueHandling = NullValueHandling.Ignore)]
-        public string Topic { get; internal set; } = "";
+        public virtual string Topic { get; internal set; } = "";
 
         /// <summary>
         /// Gets the ID of the last message sent in this channel. This is applicable to text channels only.
@@ -162,9 +160,14 @@ namespace DSharpPlus.Entities
         [JsonProperty("nsfw")]
         public bool IsNSFW { get; internal set; }
 
+        [JsonIgnore]
+        public bool Muted { get; set; }
+
+        [JsonIgnore]
+        public DiscordReadState ReadState => Discord.ReadStates.TryGetValue(Id, out var state) ? state : DiscordReadState.Default;
+
         internal DiscordChannel()
         {
-            this._permissionOverwritesLazy = new Lazy<IReadOnlyList<DiscordOverwrite>>(() => new ReadOnlyCollection<DiscordOverwrite>(this._permissionOverwrites));
         }
 
         #region Methods

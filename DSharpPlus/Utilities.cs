@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 using DSharpPlus.Entities;
 using DSharpPlus.Net;
+using Unicord;
 
 namespace DSharpPlus
 {
@@ -48,7 +49,16 @@ namespace DSharpPlus
                 vs = v.ToString(3);
             }
 
-            VersionHeader = $"DiscordBot (https://github.com/DSharpPlus/DSharpPlus, v{vs})";
+            VersionHeader = VersionHelper.VersionString;
+        }
+
+        internal static DiscordUser UpdateUser(DiscordUser old, DiscordUser usr)
+        {
+            old.Username = usr.Username;
+            old.Discriminator = usr.Discriminator;
+            old.AvatarHash = usr.AvatarHash;
+            old.PremiumType = usr.PremiumType;
+            return old;
         }
 
         internal static int CalculateIntegrity(int ping, DateTimeOffset timestamp, int heartbeat_interval)
@@ -57,21 +67,21 @@ namespace DSharpPlus
             return r.Next(ping, int.MaxValue);
         }
 
-        internal static string GetApiBaseUri() 
+        public static string GetApiBaseUri() 
             => Endpoints.BASE_URI;
 
-        internal static Uri GetApiUriFor(string path)
+        public static Uri GetApiUriFor(string path)
             => new Uri($"{GetApiBaseUri()}{path}");
 
-        internal static Uri GetApiUriFor(string path, string queryString)
+        public static Uri GetApiUriFor(string path, string queryString)
             => new Uri($"{GetApiBaseUri()}{path}{queryString}");
 
-        internal static string GetFormattedToken(BaseDiscordClient client)
+        public static string GetFormattedToken(BaseDiscordClient client)
         {
             return GetFormattedToken(client.Configuration);
         }
 
-        internal static string GetFormattedToken(DiscordConfiguration config)
+        public static string GetFormattedToken(DiscordConfiguration config)
         { 
             switch (config.TokenType)
             {

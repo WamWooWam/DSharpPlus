@@ -68,6 +68,11 @@
         /// <summary>
         /// Used to request guild synchronization.
         /// </summary>
-        GuildSync = 12
+        GuildSync = 12,
+
+        /// <summary>
+        /// Honestly who the fuck knows
+        /// </summary>
+        AdvancedGuildSync = 14
     }
 }

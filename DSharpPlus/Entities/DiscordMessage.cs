@@ -16,30 +16,8 @@ namespace DSharpPlus.Entities
     /// </summary>
     public class DiscordMessage : SnowflakeObject, IEquatable<DiscordMessage>
     {
-        internal DiscordMessage()
+        public DiscordMessage()
         {
-            this._attachmentsLazy = new Lazy<IReadOnlyList<DiscordAttachment>>(() => new ReadOnlyCollection<DiscordAttachment>(this._attachments));
-            this._embedsLazy = new Lazy<IReadOnlyList<DiscordEmbed>>(() => new ReadOnlyCollection<DiscordEmbed>(this._embeds));
-            this._mentionedChannelsLazy = new Lazy<IReadOnlyList<DiscordChannel>>(() => {
-                if (this._mentionedChannels != null)
-                    return new ReadOnlyCollection<DiscordChannel>(this._mentionedChannels);
-                return new DiscordChannel[0];
-            });
-            this._mentionedRolesLazy = new Lazy<IReadOnlyList<DiscordRole>>(() => {
-                if (this._mentionedRoles != null)
-                    return new ReadOnlyCollection<DiscordRole>(this._mentionedRoles);
-                return new DiscordRole[0];
-            });
-            this._mentionedUsersLazy = new Lazy<IReadOnlyList<DiscordUser>>(() => new ReadOnlyCollection<DiscordUser>(this._mentionedUsers));
-            this._reactionsLazy = new Lazy<IReadOnlyList<DiscordReaction>>(() => new ReadOnlyCollection<DiscordReaction>(this._reactions));
-            this._jumpLink = new Lazy<Uri>(() =>
-            {
-                var gid = this.Channel is DiscordDmChannel ? "@me" : this.Channel.GuildId.ToString(CultureInfo.InvariantCulture);
-                var cid = this.ChannelId.ToString(CultureInfo.InvariantCulture);
-                var mid = this.Id.ToString(CultureInfo.InvariantCulture);
-
-                return new Uri($"https://discordapp.com/channels/{gid}/{cid}/{mid}");
-            });
         }
         
         internal DiscordMessage(DiscordMessage other)
@@ -73,7 +51,7 @@ namespace DSharpPlus.Entities
         /// Gets the channel in which the message was sent.
         /// </summary>
         [JsonIgnore]
-        public DiscordChannel Channel 
+        public virtual DiscordChannel Channel 
             => (this.Discord as DiscordClient)?.InternalGetCachedChannel(this.ChannelId);
 
         /// <summary>
@@ -86,19 +64,19 @@ namespace DSharpPlus.Entities
         /// Gets the user or member that sent the message.
         /// </summary>
         [JsonProperty("author", NullValueHandling = NullValueHandling.Ignore)]
-        public DiscordUser Author { get; internal set; }
+        public virtual DiscordUser Author { get; internal set; }
 
         /// <summary>
         /// Gets the message's content.
         /// </summary>
         [JsonProperty("content", NullValueHandling = NullValueHandling.Ignore)]
-        public string Content { get; internal set; }
+        public virtual string Content { get; internal set; }
 
         /// <summary>
         /// Gets the message's creation timestamp.
         /// </summary>
         [JsonIgnore]
-        public DateTimeOffset Timestamp
+        public virtual DateTimeOffset Timestamp
             => !string.IsNullOrWhiteSpace(this.TimestampRaw) && DateTimeOffset.TryParse(this.TimestampRaw, CultureInfo.InvariantCulture, DateTimeStyles.None, out var dto) ?
                 dto : this.CreationTimestamp;
 
@@ -140,12 +118,10 @@ namespace DSharpPlus.Entities
 		/// </summary>
 		[JsonIgnore]
         public IReadOnlyList<DiscordUser> MentionedUsers 
-            => this._mentionedUsersLazy.Value;
+            => this._mentionedUsers;
 
         [JsonProperty("mentions", NullValueHandling = NullValueHandling.Ignore)]
         internal List<DiscordUser> _mentionedUsers;
-        [JsonIgnore]
-        Lazy<IReadOnlyList<DiscordUser>> _mentionedUsersLazy;
 
         // TODO this will probably throw an exception in DMs since it tries to wrap around a null List...
         // this is probably low priority but need to find out a clean way to solve it...
@@ -154,60 +130,50 @@ namespace DSharpPlus.Entities
         /// </summary>
         [JsonIgnore]
         public IReadOnlyList<DiscordRole> MentionedRoles 
-            => this._mentionedRolesLazy.Value;
+            => this._mentionedRoles ?? (IReadOnlyList<DiscordRole>)Array.Empty<DiscordRole>();
 
         [JsonIgnore]
         internal List<DiscordRole> _mentionedRoles;
-        [JsonIgnore]
-        private Lazy<IReadOnlyList<DiscordRole>> _mentionedRolesLazy;
 
         /// <summary>
         /// Gets channels mentioned by this message.
         /// </summary>
         [JsonIgnore]
         public IReadOnlyList<DiscordChannel> MentionedChannels 
-            => this._mentionedChannelsLazy.Value;
+            => this._mentionedChannels ?? (IReadOnlyList<DiscordChannel>)Array.Empty<DiscordChannel>();
 
         [JsonIgnore]
         internal List<DiscordChannel> _mentionedChannels;
-        [JsonIgnore]
-        private Lazy<IReadOnlyList<DiscordChannel>> _mentionedChannelsLazy;
 
         /// <summary>
         /// Gets files attached to this message.
         /// </summary>
         [JsonIgnore]
         public IReadOnlyList<DiscordAttachment> Attachments 
-            => this._attachmentsLazy.Value;
+            => this._attachments;
 
         [JsonProperty("attachments", NullValueHandling = NullValueHandling.Ignore)]
         internal List<DiscordAttachment> _attachments = new List<DiscordAttachment>();
-        [JsonIgnore]
-        private Lazy<IReadOnlyList<DiscordAttachment>> _attachmentsLazy;
 
         /// <summary>
         /// Gets embeds attached to this message.
         /// </summary>
         [JsonIgnore]
         public IReadOnlyList<DiscordEmbed> Embeds 
-            => this._embedsLazy.Value;
+            => this._embeds;
 
         [JsonProperty("embeds", NullValueHandling = NullValueHandling.Ignore)]
         internal List<DiscordEmbed> _embeds = new List<DiscordEmbed>();
-        [JsonIgnore]
-        private Lazy<IReadOnlyList<DiscordEmbed>> _embedsLazy;
 
         /// <summary>
         /// Gets reactions used on this message.
         /// </summary>
         [JsonIgnore]
         public IReadOnlyList<DiscordReaction> Reactions 
-            => this._reactionsLazy.Value;
+            => this._reactions;
 
         [JsonProperty("reactions", NullValueHandling = NullValueHandling.Ignore)]
         internal List<DiscordReaction> _reactions = new List<DiscordReaction>();
-        [JsonIgnore]
-        private Lazy<IReadOnlyList<DiscordReaction>> _reactionsLazy;
 
         /*
         /// <summary>
@@ -274,8 +240,17 @@ namespace DSharpPlus.Entities
         /// Gets the jump link to this message.
         /// </summary>
         [JsonIgnore]
-        public Uri JumpLink => this._jumpLink.Value;
-        private Lazy<Uri> _jumpLink;
+        public Uri JumpLink
+        {
+            get
+            {
+                var gid = this.Channel is DiscordDmChannel ? "@me" : this.Channel.GuildId.ToString(CultureInfo.InvariantCulture);
+                var cid = this.ChannelId.ToString(CultureInfo.InvariantCulture);
+                var mid = this.Id.ToString(CultureInfo.InvariantCulture);
+
+                return new Uri($"https://discordapp.com/channels/{gid}/{cid}/{mid}");
+            }
+        }
 
         internal DiscordMessageReference InternalBuildMessageReference()
         {
@@ -457,7 +432,6 @@ namespace DSharpPlus.Entities
         /// </summary>
         /// <param name="emoji">Emoji to react with.</param>
         /// <param name="limit">Limit of users to fetch.</param>
-        /// <param name="before">Fetch users before this user's id.</param>
         /// <param name="after">Fetch users after this user's id.</param>
         /// <returns></returns>
         public Task<IReadOnlyList<DiscordUser>> GetReactionsAsync(DiscordEmoji emoji, int limit = 25, ulong? after = null) 
@@ -470,7 +444,21 @@ namespace DSharpPlus.Entities
         /// <returns></returns>
         public Task DeleteAllReactionsAsync(string reason = null) 
             => this.Discord.ApiClient.DeleteAllReactionsAsync(this.Channel.Id, this.Id, reason);
-        
+
+        /// <summary>
+        /// Acknowledges the message. This is available to user tokens only.
+        /// </summary>
+        /// <returns></returns>
+        public Task AcknowledgeAsync()
+        {
+            if (Discord.Configuration.TokenType == TokenType.User)
+            {
+                return Discord.ApiClient.AcknowledgeMessageAsync(Id, Channel.Id);
+            }
+
+            throw new InvalidOperationException("ACK can only be used when logged in as regular user.");
+        }
+
         private async Task<IReadOnlyList<DiscordUser>> GetReactionsInternalAsync(DiscordEmoji emoji, int limit = 25, ulong? after = null)
         {
             if (limit < 0)

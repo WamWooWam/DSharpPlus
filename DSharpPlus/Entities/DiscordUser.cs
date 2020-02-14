@@ -1,8 +1,8 @@
-﻿using System;
+﻿using DSharpPlus.Net.Abstractions;
+using Newtonsoft.Json;
+using System;
 using System.Globalization;
 using System.Threading.Tasks;
-using DSharpPlus.Net.Abstractions;
-using Newtonsoft.Json;
 
 namespace DSharpPlus.Entities
 {
@@ -39,7 +39,7 @@ namespace DSharpPlus.Entities
         public virtual string Discriminator { get; internal set; }
 
         [JsonIgnore]
-        internal int DiscriminatorInt 
+        internal int DiscriminatorInt
             => int.Parse(this.Discriminator, NumberStyles.Integer, CultureInfo.InvariantCulture);
 
         /// <summary>
@@ -49,18 +49,31 @@ namespace DSharpPlus.Entities
         public virtual string AvatarHash { get; internal set; }
 
         /// <summary>
+        /// Gets the displayable name of a user.
+        /// </summary>
+        [JsonIgnore]
+        public virtual string DisplayName => Username;
+
+        /// <summary>
         /// Gets the user's avatar URL.
         /// </summary>
         [JsonIgnore]
-        public string AvatarUrl 
-            => !string.IsNullOrWhiteSpace(this.AvatarHash) ? (AvatarHash.StartsWith("a_") ? $"https://cdn.discordapp.com/avatars/{this.Id.ToString(CultureInfo.InvariantCulture)}/{AvatarHash}.gif?size=1024" : $"https://cdn.discordapp.com/avatars/{Id}/{AvatarHash}.png?size=1024") : this.DefaultAvatarUrl;
+        public virtual string AvatarUrl
+            => GetAvatarUrl(AvatarHash.StartsWith("a_") ? ImageFormat.Gif : ImageFormat.Png, 64);
+
+        /// <summary>
+        /// Gets the user's avatar URL as a static image.
+        /// </summary>
+        [JsonIgnore]
+        public virtual string NonAnimatedAvatarUrl => 
+            GetAvatarUrl(ImageFormat.Png, 64);
 
         /// <summary>
         /// Gets the URL of default avatar for this user.
         /// </summary>
         [JsonIgnore]
-        public string DefaultAvatarUrl 
-            => $"https://cdn.discordapp.com/embed/avatars/{(this.DiscriminatorInt % 5).ToString(CultureInfo.InvariantCulture)}.png?size=1024";
+        public virtual string DefaultAvatarUrl
+            => $"https://" + "cdn.discordapp.com/embed/avatars/{(this.DiscriminatorInt % 5).ToString(CultureInfo.InvariantCulture)}.png?size=64";
 
         /// <summary>
         /// Gets whether the user is a bot.
@@ -97,19 +110,19 @@ namespace DSharpPlus.Entities
         /// </summary>
         [JsonProperty("locale", NullValueHandling = NullValueHandling.Ignore)]
         public virtual string Locale { get; internal set; }
-        
+
         /// <summary>
         /// Gets the user's mention string.
         /// </summary>
         [JsonIgnore]
-        public string Mention 
+        public string Mention
             => Formatter.Mention(this, this is DiscordMember);
 
         /// <summary>
         /// Gets whether this user is the Client which created this object.
         /// </summary>
         [JsonIgnore]
-        public bool IsCurrent 
+        public bool IsCurrent
             => this.Id == this.Discord.CurrentUser.Id;
 
         /// <summary>
@@ -118,7 +131,7 @@ namespace DSharpPlus.Entities
         /// <param name="guild">Guild to unban this user from.</param>
         /// <param name="reason">Reason for audit logs.</param>
         /// <returns></returns>
-        public Task UnbanAsync(DiscordGuild guild, string reason = null) 
+        public Task UnbanAsync(DiscordGuild guild, string reason = null)
             => guild.UnbanMemberAsync(this, reason);
 
         /// <summary>
@@ -259,7 +272,7 @@ namespace DSharpPlus.Entities
         /// <param name="e1">First user to compare.</param>
         /// <param name="e2">Second user to compare.</param>
         /// <returns>Whether the two users are not equal.</returns>
-        public static bool operator !=(DiscordUser e1, DiscordUser e2) 
+        public static bool operator !=(DiscordUser e1, DiscordUser e2)
             => !(e1 == e2);
     }
 }

@@ -66,11 +66,10 @@ namespace DSharpPlus.Net.Udp
         public override void Close()
         {
             this.TokenSource.Cancel();
-#if !NETSTANDARD1_3
+
             try
             { this.Client.Close(); }
             catch (Exception) { }
-#endif
 
             // dequeue all the packets
             this.PacketQueue.Dispose();

@@ -1,12 +1,13 @@
 ﻿using System;
 using Newtonsoft.Json;
+using Unicord;
 
 namespace DSharpPlus.Entities
 {
     /// <summary>
     /// Represents an object in Discord API.
     /// </summary>
-    public abstract class SnowflakeObject
+    public abstract class SnowflakeObject : NotifyPropertyChangeImpl
     {
         /// <summary>
         /// Gets the ID of this object.
@@ -25,7 +26,7 @@ namespace DSharpPlus.Entities
         /// Gets the client instance this object is tied to.
         /// </summary>
         [JsonIgnore]
-        internal BaseDiscordClient Discord { get; set; }
+        public BaseDiscordClient Discord { get; set; }
 
         internal SnowflakeObject() { }
     }

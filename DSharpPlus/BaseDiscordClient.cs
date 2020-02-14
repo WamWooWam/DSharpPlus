@@ -1,4 +1,6 @@
 ﻿#pragma warning disable CS0618
+using DSharpPlus.Entities;
+using DSharpPlus.Net;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -6,15 +8,15 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
-using DSharpPlus.Entities;
-using DSharpPlus.Net;
+using Unicord;
 
 namespace DSharpPlus
 {
-    public abstract class BaseDiscordClient : IDisposable
+    public abstract class BaseDiscordClient : NotifyPropertyChangeImpl, IDisposable
     {
-        internal protected DiscordApiClient ApiClient { get; }
+        public DiscordApiClient ApiClient { get; }
         internal protected DiscordConfiguration Configuration { get; }
+        internal protected ConcurrentDictionary<ulong, DiscordReadState> ReadStates { get; } = new ConcurrentDictionary<ulong, DiscordReadState>();
 
         /// <summary>
         /// Gets the instance of the logger for this client.
@@ -24,7 +26,7 @@ namespace DSharpPlus
         /// <summary>
         /// Gets the string representing the version of D#+.
         /// </summary>
-        public string VersionString 
+        public string VersionString
             => this._versionString.Value;
 
         private readonly Lazy<string> _versionString = new Lazy<string>(() =>
@@ -67,14 +69,13 @@ namespace DSharpPlus
         /// <summary>
         /// Gets the list of available voice regions. Note that this property will not contain VIP voice regions.
         /// </summary>
-        public IReadOnlyDictionary<string, DiscordVoiceRegion> VoiceRegions 
-            => this._voice_regions_lazy.Value;
+        public IReadOnlyDictionary<string, DiscordVoiceRegion> VoiceRegions
+            => this.InternalVoiceRegions;
 
         /// <summary>
         /// Gets the list of available voice regions. This property is meant as a way to modify <see cref="VoiceRegions"/>.
         /// </summary>
         protected internal ConcurrentDictionary<string, DiscordVoiceRegion> InternalVoiceRegions { get; set; }
-        internal Lazy<IReadOnlyDictionary<string, DiscordVoiceRegion>> _voice_regions_lazy;
 
         /// <summary>
         /// Initializes this Discord API client.
@@ -87,7 +88,6 @@ namespace DSharpPlus
             this.DebugLogger = new DebugLogger(this);
             this.UserCache = new ConcurrentDictionary<ulong, DiscordUser>();
             this.InternalVoiceRegions = new ConcurrentDictionary<string, DiscordVoiceRegion>();
-            this._voice_regions_lazy = new Lazy<IReadOnlyDictionary<string, DiscordVoiceRegion>>(() => new ReadOnlyDictionary<string, DiscordVoiceRegion>(this.InternalVoiceRegions));
         }
 
         /// <summary>
@@ -148,7 +148,7 @@ namespace DSharpPlus
         /// Gets a list of regions
         /// </summary>
         /// <returns></returns>
-        public Task<IReadOnlyList<DiscordVoiceRegion>> ListVoiceRegionsAsync() 
+        public Task<IReadOnlyList<DiscordVoiceRegion>> ListVoiceRegionsAsync()
             => this.ApiClient.ListVoiceRegionsAsync();
 
         /// <summary>
@@ -174,7 +174,7 @@ namespace DSharpPlus
             }
         }
 
-        internal DiscordUser InternalGetCachedUser(ulong user_id) 
+        internal DiscordUser InternalGetCachedUser(ulong user_id)
             => this.UserCache.TryGetValue(user_id, out var user) ? user : null;
 
         /// <summary>

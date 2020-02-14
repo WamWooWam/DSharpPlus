@@ -515,13 +515,12 @@ namespace DSharpPlus
         /// Gets the list of available voice regions. Note that this property will not contain VIP voice regions.
         /// </summary>
         public IReadOnlyDictionary<string, DiscordVoiceRegion> VoiceRegions 
-            => this._voiceRegionsLazy?.Value;
+            => InternalVoiceRegions;
 
         /// <summary>
         /// Gets the list of available voice regions. This property is meant as a way to modify <see cref="VoiceRegions"/>.
         /// </summary>
         private ConcurrentDictionary<string, DiscordVoiceRegion> InternalVoiceRegions { get; set; }
-        private Lazy<IReadOnlyDictionary<string, DiscordVoiceRegion>> _voiceRegionsLazy;
 
         /// <summary>
         /// Initializes new auto-sharding Discord client.
@@ -629,7 +628,6 @@ namespace DSharpPlus
                 if (this.InternalVoiceRegions != null)
                 {
                     client.InternalVoiceRegions = this.InternalVoiceRegions;
-                    client._voice_regions_lazy = new Lazy<IReadOnlyDictionary<string, DiscordVoiceRegion>>(() => new ReadOnlyDictionary<string, DiscordVoiceRegion>(client.InternalVoiceRegions));
                 }
 
                 client.ClientErrored += this.Client_ClientError;
@@ -691,7 +689,6 @@ namespace DSharpPlus
                 if (this.InternalVoiceRegions == null)
                 {
                     this.InternalVoiceRegions = client.InternalVoiceRegions;
-                    this._voiceRegionsLazy = new Lazy<IReadOnlyDictionary<string, DiscordVoiceRegion>>(() => new ReadOnlyDictionary<string, DiscordVoiceRegion>(this.InternalVoiceRegions));
                 }
             }
         }

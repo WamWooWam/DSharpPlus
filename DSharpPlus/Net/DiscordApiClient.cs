@@ -97,6 +97,13 @@ namespace DSharpPlus.Net
             foreach (var xr in ret._reactions)
                 xr.Emoji.Discord = this.Discord;
 
+            if (ret._embeds == null)
+                ret._embeds = new List<DiscordEmbed>();
+            foreach (var xe in ret._embeds)
+                xe.Owner = ret;
+
+
+
             return ret;
         }
 
@@ -226,20 +233,14 @@ namespace DSharpPlus.Net
                 if (usr == null)
                 {
                     usr = new DiscordUser(xb.RawUser) { Discord = this.Discord };
-                    usr = this.Discord.UserCache.AddOrUpdate(usr.Id, usr, (id, old) =>
-                    {
-                        old.Username = usr.Username;
-                        old.Discriminator = usr.Discriminator;
-                        old.AvatarHash = usr.AvatarHash;
-                        return old;
-                    });
+                    usr = this.Discord.UserCache.AddOrUpdate(usr.Id, usr, (id, old) => Utilities.UpdateUser(old, usr));
                 }
 
                 xb.User = usr;
                 return xb;
             });
-            var bans = new ReadOnlyCollection<DiscordBan>(new List<DiscordBan>(bans_raw));
 
+            var bans = new ReadOnlyCollection<DiscordBan>(new List<DiscordBan>(bans_raw));
             return bans;
         }
 
@@ -744,6 +745,55 @@ namespace DSharpPlus.Net
             return this.DoRequestAsync(this.Discord, bucket, url, RestRequestMethod.POST, headers, DiscordJson.SerializeObject(pld));
         }
 
+        internal async Task AcknowledgeMessageAsync(ulong msg_id, ulong channel_id)
+        {
+            await TokenSemaphore.WaitAsync().ConfigureAwait(false);
+
+            var pld = new AcknowledgePayload
+            {
+                Token = LastAckToken
+            };
+
+            var route = $"{Endpoints.CHANNELS}/:channel_id{Endpoints.MESSAGES}/{msg_id}{Endpoints.ACK}";
+            var bucket = Rest.GetBucket(RestRequestMethod.POST, route, new { channel_id }, out var path);
+
+            var url = Utilities.GetApiUriFor(path);
+            var res = await DoRequestAsync(Discord, bucket, url, RestRequestMethod.POST, payload: DiscordJson.SerializeObject(pld)).ConfigureAwait(false);
+
+            var ret = JsonConvert.DeserializeObject<AcknowledgePayload>(res.Response);
+            LastAckToken = ret.Token;
+
+            TokenSemaphore.Release();
+        }
+
+        internal async Task AcknowledgeGuildAsync(ulong guild_id)
+        {
+            await TokenSemaphore.WaitAsync().ConfigureAwait(false);
+
+            var pld = new AcknowledgePayload
+            {
+                Token = LastAckToken
+            };
+
+            var route = $"{Endpoints.GUILDS}/:guild_id{Endpoints.ACK}";
+            var bucket = Rest.GetBucket(RestRequestMethod.POST, route, new { guild_id }, out var path);
+
+            var url = Utilities.GetApiUriFor(path);
+            var res = await DoRequestAsync(Discord, bucket, url, RestRequestMethod.POST, payload: DiscordJson.SerializeObject(pld)).ConfigureAwait(false);
+
+            if (res.ResponseCode != 204)
+            {
+                var ret = JsonConvert.DeserializeObject<AcknowledgePayload>(res.Response);
+                LastAckToken = ret.Token;
+            }
+            else
+            {
+                LastAckToken = null;
+            }
+
+            TokenSemaphore.Release();
+        }
+
         internal async Task<IReadOnlyList<DiscordInvite>> GetChannelInvitesAsync(ulong channel_id)
         {
             var route = $"{Endpoints.CHANNELS}/:channel_id{Endpoints.INVITES}";
@@ -955,13 +1005,7 @@ namespace DSharpPlus.Net
             var tm = JsonConvert.DeserializeObject<TransportMember>(res.Response);
 
             var usr = new DiscordUser(tm.User) { Discord = this.Discord };
-            usr = this.Discord.UserCache.AddOrUpdate(tm.User.Id, usr, (id, old) =>
-            {
-                old.Username = usr.Username;
-                old.Discriminator = usr.Discriminator;
-                old.AvatarHash = usr.AvatarHash;
-                return old;
-            });
+            usr = this.Discord.UserCache.AddOrUpdate(tm.User.Id, usr, (id, old) => Utilities.UpdateUser(old, usr));
 
             return new DiscordMember(tm)
             {
@@ -1717,13 +1761,7 @@ namespace DSharpPlus.Net
             foreach (var xr in reacters_raw)
             {
                 var usr = new DiscordUser(xr) { Discord = this.Discord };
-                usr = this.Discord.UserCache.AddOrUpdate(xr.Id, usr, (id, old) =>
-                {
-                    old.Username = usr.Username;
-                    old.Discriminator = usr.Discriminator;
-                    old.AvatarHash = usr.AvatarHash;
-                    return old;
-                });
+                usr = this.Discord.UserCache.AddOrUpdate(xr.Id, usr, (id, old) => Utilities.UpdateUser(old, usr));
 
                 reacters.Add(usr);
             }
@@ -1918,5 +1956,6 @@ namespace DSharpPlus.Net
             return new ReadOnlyCollection<DiscordApplicationAsset>(new List<DiscordApplicationAsset>(assets));
         }
         #endregion
+        
     }
 }
