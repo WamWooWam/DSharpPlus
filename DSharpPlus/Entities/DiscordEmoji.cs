@@ -18,6 +18,9 @@ namespace DSharpPlus.Entities
         [JsonProperty("name", NullValueHandling = NullValueHandling.Ignore)]
         public string Name { get; internal set; }
 
+        [JsonIgnore]
+        public string Unicode => Id == 0 ? Name : null;
+
         /// <summary>
         /// Gets IDs the roles this emoji is enabled for.
         /// </summary>

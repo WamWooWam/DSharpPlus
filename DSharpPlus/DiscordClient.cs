@@ -883,10 +883,31 @@ namespace DSharpPlus
                     await OnRelationshipRemoveAsync(dat).ConfigureAwait(false);
                     break;
 
+                case "channel_unread_update":
+                    OnChannelUnreadUpdate(dat);
+
+                    break;
+
                 default:
                     await OnUnknownEventAsync(payload).ConfigureAwait(false);
                     DebugLogger.LogMessage(LogLevel.Warning, "Websocket:Dispatch", $"Unknown event: {payload.EventName}\n{payload.Data}", DateTime.Now);
                     break;
+            }
+        }
+
+        private void OnChannelUnreadUpdate(JObject dat)
+        {
+            var readStates = dat["channel_unread_updates"].ToDiscordObject<IEnumerable<DiscordReadState>>();
+            foreach (var state in readStates)
+            {
+                state.Discord = this;
+                ReadStates.AddOrUpdate(state.Id, state, (id, old) =>
+                {
+                    old.LastMessageId = state.LastMessageId;
+                    old.LastPinTimestamp = state.LastPinTimestamp;
+                    old.MentionCount = state.MentionCount;
+                    return old;
+                });
             }
         }
 
@@ -2597,7 +2618,7 @@ namespace DSharpPlus
         }
 
         private SocketLock GetSocketLock()
-            => SocketLocks.GetOrAdd(this.CurrentApplication.Id, appId => new SocketLock(appId));
+            => SocketLocks.GetOrAdd(this.CurrentApplication?.Id ?? this.CurrentUser.Id, appId => new SocketLock(appId));
 
         ~DiscordClient()
         {

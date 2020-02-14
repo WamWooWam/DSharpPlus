@@ -334,13 +334,18 @@ namespace DSharpPlus.Entities
         /// <summary>
         /// Gets the URL of this asset.
         /// </summary>
-        public override Uri Url { get; }
-
-        public DiscordSpotifyAsset()
+        public override Uri Url
         {
-            var ids = this.Id.Split(':');
-            var id = ids[1];
-            Url = new Uri($"https://i.scdn.co/image/{id}");
+            get
+            {
+                var ids = this.Id.Split(':');
+                var id = ids[1];
+                return new Uri($"https://i.scdn.co/image/{id}");
+            }
+        }
+
+        public DiscordSpotifyAsset() : base()
+        {
         }
     }
 

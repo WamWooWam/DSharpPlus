@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 
@@ -27,6 +28,10 @@ namespace DSharpPlus.Entities
 
         [JsonIgnore]
         internal List<DiscordUser> _recipients;
+
+
+        [JsonIgnore]
+        public DiscordUser Recipient => Recipients.FirstOrDefault();
 
         /// <summary>
         /// Gets the hash of this channel's icon.
