@@ -1,12 +1,12 @@
+using DSharpPlus.Net.Abstractions;
+using DSharpPlus.Net.Models;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using DSharpPlus.Net.Abstractions;
-using DSharpPlus.Net.Models;
-using Newtonsoft.Json;
 
 namespace DSharpPlus.Entities
 {
@@ -31,7 +31,7 @@ namespace DSharpPlus.Entities
         /// Gets the category that contains this channel.
         /// </summary>
         [JsonIgnore]
-        public DiscordChannel Parent 
+        public DiscordChannel Parent
             => this.ParentId.HasValue ? this.Guild.GetChannel(this.ParentId.Value) : null;
 
         /// <summary>
@@ -56,28 +56,28 @@ namespace DSharpPlus.Entities
         /// Gets whether this channel is a DM channel.
         /// </summary>
         [JsonIgnore]
-        public bool IsPrivate 
+        public bool IsPrivate
             => this.Type == ChannelType.Private || this.Type == ChannelType.Group;
 
         /// <summary>
         /// Gets whether this channel is a channel category.
         /// </summary>
         [JsonIgnore]
-        public bool IsCategory 
+        public bool IsCategory
             => this.Type == ChannelType.Category;
 
         /// <summary>
         /// Gets the guild to which this channel belongs.
         /// </summary>
         [JsonIgnore]
-        public DiscordGuild Guild 
+        public DiscordGuild Guild
             => this.Discord.Guilds.TryGetValue(this.GuildId, out var guild) ? guild : null;
 
         /// <summary>
         /// Gets a collection of permission overwrites for this channel.
         /// </summary>
         [JsonIgnore]
-        public IReadOnlyList<DiscordOverwrite> PermissionOverwrites 
+        public IReadOnlyList<DiscordOverwrite> PermissionOverwrites
             => this._permissionOverwrites;
 
         [JsonProperty("permission_overwrites", NullValueHandling = NullValueHandling.Ignore)]
@@ -118,9 +118,9 @@ namespace DSharpPlus.Entities
         /// Gets this channel's mention string.
         /// </summary>
         [JsonIgnore]
-        public string Mention 
+        public string Mention
             => Formatter.Mention(this);
-        
+
         /// <summary>
         /// Gets this channel's children. This applies only to channel categories.
         /// </summary>
@@ -165,6 +165,12 @@ namespace DSharpPlus.Entities
 
         [JsonIgnore]
         public DiscordReadState ReadState => Discord.ReadStates.TryGetValue(Id, out var state) ? state : DiscordReadState.Default;
+
+        [JsonIgnore]
+        public IEnumerable<DiscordUser> ConnectedUsers => Type == ChannelType.Voice ? Users : null;
+
+        [JsonIgnore]
+        public int UserCount => ConnectedUsers?.Count() ?? 0;
 
         internal DiscordChannel()
         {
@@ -264,7 +270,7 @@ namespace DSharpPlus.Entities
         /// </summary>
         /// <param name="reason">Reason for audit logs.</param>
         /// <returns></returns>
-        public Task DeleteAsync(string reason = null) 
+        public Task DeleteAsync(string reason = null)
             => this.Discord.ApiClient.DeleteChannelAsync(Id, reason);
 
         /// <summary>
@@ -321,7 +327,7 @@ namespace DSharpPlus.Entities
             var mdl = new ChannelEditModel();
             action(mdl);
             return this.Discord.ApiClient.ModifyChannelAsync(this.Id, mdl.Name, mdl.Position, mdl.Topic, mdl.Nsfw,
-                mdl.Parent.HasValue ? mdl.Parent.Value?.Id : default(Optional<ulong?>), mdl.Bitrate, mdl.Userlimit, mdl.PerUserRateLimit, 
+                mdl.Parent.HasValue ? mdl.Parent.Value?.Id : default(Optional<ulong?>), mdl.Bitrate, mdl.Userlimit, mdl.PerUserRateLimit,
                 mdl.AuditLogReason);
         }
 
@@ -361,7 +367,7 @@ namespace DSharpPlus.Entities
         /// </summary> 
         public Task<IReadOnlyList<DiscordMessage>> GetMessagesBeforeAsync(ulong before, int limit = 100)
             => this.GetMessagesInternalAsync(limit, before, null, null);
-        
+
         /// <summary>  
         /// Returns a list of messages after a certain message.
         /// <param name="limit">The amount of messages to fetch.</param>
@@ -369,7 +375,7 @@ namespace DSharpPlus.Entities
         /// </summary> 
         public Task<IReadOnlyList<DiscordMessage>> GetMessagesAfterAsync(ulong after, int limit = 100)
             => this.GetMessagesInternalAsync(limit, null, after, null);
-        
+
         /// <summary>  
         /// Returns a list of messages around a certain message.
         /// <param name="limit">The amount of messages to fetch.</param>
@@ -448,7 +454,7 @@ namespace DSharpPlus.Entities
                 await this.Discord.ApiClient.DeleteMessageAsync(this.Id, msgs.Single(), reason).ConfigureAwait(false);
                 return;
             }
-            
+
             for (var i = 0; i < msgs.Count(); i += 100)
                 await this.Discord.ApiClient.DeleteMessagesAsync(this.Id, msgs.Skip(i).Take(100), reason).ConfigureAwait(false);
         }
@@ -494,7 +500,7 @@ namespace DSharpPlus.Entities
         /// <param name="deny"></param>
         /// <param name="reason">Reason for audit logs.</param>
         /// <returns></returns>
-        public Task AddOverwriteAsync(DiscordMember member, Permissions allow = Permissions.None, Permissions deny = Permissions.None, string reason = null) 
+        public Task AddOverwriteAsync(DiscordMember member, Permissions allow = Permissions.None, Permissions deny = Permissions.None, string reason = null)
             => this.Discord.ApiClient.EditChannelPermissionsAsync(this.Id, member.Id, allow, deny, "member", reason);
 
         /// <summary>
@@ -505,7 +511,7 @@ namespace DSharpPlus.Entities
         /// <param name="deny"></param>
         /// <param name="reason">Reason for audit logs.</param>
         /// <returns></returns>
-        public Task AddOverwriteAsync(DiscordRole role, Permissions allow = Permissions.None, Permissions deny = Permissions.None, string reason = null) 
+        public Task AddOverwriteAsync(DiscordRole role, Permissions allow = Permissions.None, Permissions deny = Permissions.None, string reason = null)
             => this.Discord.ApiClient.EditChannelPermissionsAsync(this.Id, role.Id, allow, deny, "role", reason);
 
         /// <summary>
@@ -555,7 +561,7 @@ namespace DSharpPlus.Entities
         /// Returns a list of webhooks
         /// </summary>
         /// <returns></returns>
-        public Task<IReadOnlyList<DiscordWebhook>> GetWebhooksAsync() 
+        public Task<IReadOnlyList<DiscordWebhook>> GetWebhooksAsync()
             => this.Discord.ApiClient.GetChannelWebhooksAsync(this.Id);
 
         /// <summary>
@@ -567,7 +573,7 @@ namespace DSharpPlus.Entities
         {
             if (this.Type != ChannelType.Voice)
                 throw new ArgumentException("Cannot place member in a non-voice channel!"); // be a little more angery, let em learn!!1
-            
+
             await this.Discord.ApiClient.ModifyGuildMemberAsync(this.Guild.Id, member.Id, default, default, default,
                 default, this.Id, null).ConfigureAwait(false);
         }
@@ -584,7 +590,7 @@ namespace DSharpPlus.Entities
             //
             // you should use a single tilde
             // ~emzi
-            
+
             // user > role > everyone
             // allow > deny > undefined
             // =>
@@ -618,7 +624,7 @@ namespace DSharpPlus.Entities
                 .Select(xr => this._permissionOverwrites.FirstOrDefault(xo => xo.Id == xr.Id))
                 .Where(xo => xo != null)
                 .ToList();
-            
+
             // assign channel permission overwrites for @everyone pseudo-role
             var everyoneOverwrites = this._permissionOverwrites.FirstOrDefault(xo => xo.Id == everyoneRole.Id);
             if (everyoneOverwrites != null)
@@ -635,7 +641,7 @@ namespace DSharpPlus.Entities
             // channel overrides for just this member
             var mbOverrides = this._permissionOverwrites.FirstOrDefault(xo => xo.Id == mbr.Id);
             if (mbOverrides == null) return perms;
-            
+
             // assign channel permission overwrites for just this member
             perms &= ~mbOverrides.Denied;
             perms |= mbOverrides.Allowed;
@@ -720,7 +726,7 @@ namespace DSharpPlus.Entities
         /// <param name="e1">First channel to compare.</param>
         /// <param name="e2">Second channel to compare.</param>
         /// <returns>Whether the two channels are not equal.</returns>
-        public static bool operator !=(DiscordChannel e1, DiscordChannel e2) 
+        public static bool operator !=(DiscordChannel e1, DiscordChannel e2)
             => !(e1 == e2);
     }
 }
