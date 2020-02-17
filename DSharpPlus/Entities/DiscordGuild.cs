@@ -647,7 +647,7 @@ namespace DSharpPlus.Entities
         /// <summary>
         /// Requests that Discord send a complete list of guild members. This method will return immediately.
         /// </summary>
-        public void RequestAllMembers()
+        public async Task RequestAllMembersAsync()
         {
             if (!(this.Discord is DiscordClient client))
                 throw new InvalidOperationException("This operation is only valid for regular Discord clients.");
@@ -658,7 +658,7 @@ namespace DSharpPlus.Entities
                 Data = new GatewayRequestGuildMembers(this)
             };
             var payloadStr = JsonConvert.SerializeObject(payload, Formatting.None);
-            client._webSocketClient.SendMessage(payloadStr);
+            await client._webSocketClient.SendMessageAsync(payloadStr).ConfigureAwait(false);
         }
 
         /// <summary>

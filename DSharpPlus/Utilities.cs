@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Text.RegularExpressions;
 using DSharpPlus.Entities;
 using DSharpPlus.Net;
@@ -20,6 +21,8 @@ namespace DSharpPlus
         /// </summary>
         private static string VersionHeader { get; set; }
         private static Dictionary<Permissions, string> PermissionStrings { get; set; }
+
+        internal static UTF8Encoding UTF8 { get; } = new UTF8Encoding(false);
 
         static Utilities()
         {
@@ -257,6 +260,12 @@ namespace DSharpPlus
                     return true;
 
             return false;
+        }
+
+        internal static void Deconstruct<TKey, TValue>(this KeyValuePair<TKey, TValue> kvp, out TKey key, out TValue value)
+        {
+            key = kvp.Key;
+            value = kvp.Value;
         }
     }
 }
