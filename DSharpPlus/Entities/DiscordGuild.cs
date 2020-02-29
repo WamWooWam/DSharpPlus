@@ -748,7 +748,7 @@ namespace DSharpPlus.Entities
                 .GroupBy(xh => xh.Id)
                 .Select(xgh => xgh.First());
 
-            var ams = amr.Select(xau => this._members.TryGetValue(xau.Id, out var member) ? member : new DiscordMember { Discord = this.Discord, Id = xau.Id, _guild_id = this.Id });
+            var ams = amr.Select(xau => this._members.TryGetValue(xau.Id, out var member) ? member : new DiscordMember { Discord = this.Discord, Id = xau.Id, _guild_id = this.Id, IsLocal = true });
             var amd = ams.ToDictionary(xm => xm.Id, xm => xm);
 
             Dictionary<ulong, DiscordWebhook> ahd = null;
@@ -1665,10 +1665,10 @@ namespace DSharpPlus.Entities
                 .FirstOrDefault(xc => (xc.PermissionsFor(this.CurrentMember) & DSharpPlus.Permissions.AccessChannels) == DSharpPlus.Permissions.AccessChannels);
         }
 
-        public void RequestUserPresences(IEnumerable<DiscordUser> usersToSync)
+        public async Task RequestUserPresencesAsync(IEnumerable<DiscordUser> usersToSync)
         {
             if (Discord is DiscordClient client)
-                client.RequestUserPresences(this, usersToSync);
+                await client.RequestUserPresencesAsync(this, usersToSync);
         }
         #endregion
 

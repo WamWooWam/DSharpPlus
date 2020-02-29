@@ -57,12 +57,12 @@ namespace DSharpPlus.Entities
             get
             {
                 if (this.Id == 0)
-                    throw new InvalidOperationException("Cannot get URL of unicode emojis.");
+                    return null;
 
                 if (this.IsAnimated)
-                    return $"https://cdn.discordapp.com/emojis/{this.Id.ToString(CultureInfo.InvariantCulture)}.gif";
+                    return $"https://cdn.discordapp.com/emojis/{this.Id.ToString(CultureInfo.InvariantCulture)}.gif?size=32";
 
-                return $"https://cdn.discordapp.com/emojis/{this.Id.ToString(CultureInfo.InvariantCulture)}.png";
+                return $"https://cdn.discordapp.com/emojis/{this.Id.ToString(CultureInfo.InvariantCulture)}.png?size=32";
             }
         }
 

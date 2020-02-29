@@ -1,4 +1,9 @@
-﻿using System;
+﻿using DSharpPlus.Entities;
+using DSharpPlus.Net.Abstractions;
+using DSharpPlus.Net.Serialization;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
@@ -7,11 +12,6 @@ using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
-using DSharpPlus.Entities;
-using DSharpPlus.Net.Abstractions;
-using DSharpPlus.Net.Serialization;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace DSharpPlus.Net
 {
@@ -62,7 +62,7 @@ namespace DSharpPlus.Net
             if (guild != null)
             {
                 if (!guild.Members.TryGetValue(author.Id, out var mbr))
-                    mbr = new DiscordMember(usr) { Discord = this.Discord, _guild_id = guild.Id };
+                    guild._members[author.Id] = mbr = new DiscordMember(usr) { Discord = this.Discord, _guild_id = guild.Id };
                 ret.Author = mbr;
             }
             else
@@ -662,7 +662,7 @@ namespace DSharpPlus.Net
 
             return new ReadOnlyCollection<DiscordMessage>(new List<DiscordMessage>(msgs));
         }
-        
+
         internal async Task<DiscordMessage> GetChannelMessageAsync(ulong channel_id, ulong message_id)
         {
             var route = $"{Endpoints.CHANNELS}/:channel_id{Endpoints.MESSAGES}/:message_id";
@@ -682,7 +682,7 @@ namespace DSharpPlus.Net
             {
                 Suppress = suppress
             };
-            
+
             var route = $"{Endpoints.CHANNELS}/:channel_id{Endpoints.MESSAGES}/:message_id{Endpoints.SUPPRESS_EMBEDS}";
             var bucket = this.Rest.GetBucket(RestRequestMethod.POST, route, new { channel_id, message_id }, out var path);
 
@@ -1956,6 +1956,6 @@ namespace DSharpPlus.Net
             return new ReadOnlyCollection<DiscordApplicationAsset>(new List<DiscordApplicationAsset>(assets));
         }
         #endregion
-        
+
     }
 }

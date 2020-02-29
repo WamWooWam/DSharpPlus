@@ -60,7 +60,8 @@ namespace DSharpPlus.Entities
         internal IReadOnlyList<ulong> RoleIds 
             => this._roleIds;
 
-        public bool IsLocal { get; }
+        [JsonIgnore]
+        public bool IsLocal { get; internal set; }
 
         [JsonProperty("roles", NullValueHandling = NullValueHandling.Ignore)]
         internal List<ulong> _roleIds;
@@ -76,14 +77,14 @@ namespace DSharpPlus.Entities
         /// Gets the color associated with this user's top color-giving role, otherwise 0 (no color).
         /// </summary>
         [JsonIgnore]
-        public DiscordColor Color
+        public override DiscordColor Color
         {
             get
             {
                 var role = this.Roles.OrderByDescending(xr => xr.Position).FirstOrDefault(xr => xr.Color.Value != 0);
                 if (role != null)
                     return role.Color;
-                return new DiscordColor();
+                return default;
             }
         }
 

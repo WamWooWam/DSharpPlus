@@ -15,6 +15,19 @@ namespace DSharpPlus.Entities
     /// </summary>
     public class DiscordChannel : SnowflakeObject, IEquatable<DiscordChannel>
     {
+        private string _name;
+        private int _position;
+        private ulong? _parentId;
+        private string _topic = "";
+        private int _bitrate;
+        private int _userLimit;
+        private int? _perUserRateLimit;
+        private bool _isNSFW;
+        private ulong _lastMessageId = 0;
+
+        [JsonProperty("permission_overwrites", NullValueHandling = NullValueHandling.Ignore)]
+        internal List<DiscordOverwrite> _permissionOverwrites = new List<DiscordOverwrite>();
+
         /// <summary>
         /// Gets ID of the guild to which this channel belongs.
         /// </summary>
@@ -25,7 +38,7 @@ namespace DSharpPlus.Entities
         /// Gets ID of the category that contains this channel.
         /// </summary>
         [JsonProperty("parent_id", NullValueHandling = NullValueHandling.Include)]
-        public ulong? ParentId { get; internal set; }
+        public ulong? ParentId { get => _parentId; internal set => OnPropertySet(ref _parentId, value, nameof(Parent)); } // lets fucking go
 
         /// <summary>
         /// Gets the category that contains this channel.
@@ -38,7 +51,7 @@ namespace DSharpPlus.Entities
         /// Gets the name of this channel.
         /// </summary>
         [JsonProperty("name", NullValueHandling = NullValueHandling.Ignore)]
-        public virtual string Name { get; internal set; }
+        public virtual string Name { get => _name; internal set => OnPropertySet(ref _name, value); }
 
         /// <summary>
         /// Gets the type of this channel.
@@ -50,7 +63,7 @@ namespace DSharpPlus.Entities
         /// Gets the position of this channel.
         /// </summary>
         [JsonProperty("position", NullValueHandling = NullValueHandling.Ignore)]
-        public int Position { get; internal set; }
+        public int Position { get => _position; internal set => OnPropertySet(ref _position, value); }
 
         /// <summary>
         /// Gets whether this channel is a DM channel.
@@ -80,39 +93,36 @@ namespace DSharpPlus.Entities
         public IReadOnlyList<DiscordOverwrite> PermissionOverwrites
             => this._permissionOverwrites;
 
-        [JsonProperty("permission_overwrites", NullValueHandling = NullValueHandling.Ignore)]
-        internal List<DiscordOverwrite> _permissionOverwrites = new List<DiscordOverwrite>();
-
         /// <summary>
         /// Gets the channel's topic. This is applicable to text channels only.
         /// </summary>
         [JsonProperty("topic", NullValueHandling = NullValueHandling.Ignore)]
-        public virtual string Topic { get; internal set; } = "";
+        public virtual string Topic { get => _topic; internal set => OnPropertySet(ref _topic, value); }
 
         /// <summary>
         /// Gets the ID of the last message sent in this channel. This is applicable to text channels only.
         /// </summary>
         [JsonProperty("last_message_id", NullValueHandling = NullValueHandling.Ignore)]
-        public ulong LastMessageId { get; internal set; } = 0;
+        public ulong LastMessageId { get => _lastMessageId; internal set => OnPropertySet(ref _lastMessageId, value); }
 
         /// <summary>
         /// Gets this channel's bitrate. This is applicable to voice channels only.
         /// </summary>
         [JsonProperty("bitrate", NullValueHandling = NullValueHandling.Ignore)]
-        public int Bitrate { get; internal set; }
+        public int Bitrate { get => _bitrate; internal set => OnPropertySet(ref _bitrate, value); }
 
         /// <summary>
         /// Gets this channel's user limit. This is applicable to voice channels only.
         /// </summary>
         [JsonProperty("user_limit", NullValueHandling = NullValueHandling.Ignore)]
-        public int UserLimit { get; internal set; }
+        public int UserLimit { get => _userLimit; internal set => OnPropertySet(ref _userLimit, value); }
 
         /// <summary>
         /// <para>Gets the slow mode delay configured for this channel.</para>
         /// <para>All bots, as well as users with <see cref="Permissions.ManageChannels"/> or <see cref="Permissions.ManageMessages"/> permissions in the channel are exempt from slow mode.</para>
         /// </summary>
         [JsonProperty("rate_limit_per_user")]
-        public int? PerUserRateLimit { get; internal set; }
+        public int? PerUserRateLimit { get => _perUserRateLimit; internal set => OnPropertySet(ref _perUserRateLimit, value); }
 
         /// <summary>
         /// Gets this channel's mention string.
@@ -158,7 +168,7 @@ namespace DSharpPlus.Entities
         /// Gets whether this channel is an NSFW channel.
         /// </summary>
         [JsonProperty("nsfw")]
-        public bool IsNSFW { get; internal set; }
+        public bool IsNSFW { get => _isNSFW; internal set => OnPropertySet(ref _isNSFW, value); }
 
         [JsonIgnore]
         public bool Muted { get; set; }

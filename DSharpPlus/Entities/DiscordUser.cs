@@ -11,6 +11,10 @@ namespace DSharpPlus.Entities
     /// </summary>
     public class DiscordUser : SnowflakeObject, IEquatable<DiscordUser>
     {
+        private string _username;
+        private string _discriminator;
+        private string _avatarHash;
+
         internal DiscordUser() { }
         internal DiscordUser(TransportUser transport)
         {
@@ -30,13 +34,21 @@ namespace DSharpPlus.Entities
         /// Gets this user's username.
         /// </summary>
         [JsonProperty("username", NullValueHandling = NullValueHandling.Ignore)]
-        public virtual string Username { get; internal set; }
+        public virtual string Username
+        {
+            get => _username;
+            internal set => OnPropertySet(ref _username, value);
+        }
 
         /// <summary>
         /// Gets the user's 4-digit discriminator.
         /// </summary>
         [JsonProperty("discriminator", NullValueHandling = NullValueHandling.Ignore)]
-        public virtual string Discriminator { get; internal set; }
+        public virtual string Discriminator
+        {
+            get => _discriminator;
+            internal set => OnPropertySet(ref _discriminator, value, nameof(Discriminator), nameof(DiscriminatorInt));
+        }
 
         [JsonIgnore]
         internal int DiscriminatorInt
@@ -46,7 +58,11 @@ namespace DSharpPlus.Entities
         /// Gets the user's avatar hash.
         /// </summary>
         [JsonProperty("avatar", NullValueHandling = NullValueHandling.Ignore)]
-        public virtual string AvatarHash { get; internal set; }
+        public virtual string AvatarHash
+        {
+            get => _avatarHash;
+            internal set => OnPropertySet(ref _avatarHash, value, nameof(AvatarHash), nameof(AvatarUrl), nameof(NonAnimatedAvatarUrl));
+        }
 
         /// <summary>
         /// Gets the displayable name of a user.
@@ -55,17 +71,23 @@ namespace DSharpPlus.Entities
         public virtual string DisplayName => Username;
 
         /// <summary>
+        /// Gets the displayable name of a user.
+        /// </summary>
+        [JsonIgnore]
+        public virtual DiscordColor Color => default;
+
+        /// <summary>
         /// Gets the user's avatar URL.
         /// </summary>
         [JsonIgnore]
         public virtual string AvatarUrl
-            => GetAvatarUrl(AvatarHash.StartsWith("a_") ? ImageFormat.Gif : ImageFormat.Png, 64);
+            => GetAvatarUrl((AvatarHash?.StartsWith("a_") ?? false) ? ImageFormat.Gif : ImageFormat.Png, 64);
 
         /// <summary>
         /// Gets the user's avatar URL as a static image.
         /// </summary>
         [JsonIgnore]
-        public virtual string NonAnimatedAvatarUrl => 
+        public virtual string NonAnimatedAvatarUrl =>
             GetAvatarUrl(ImageFormat.Png, 64);
 
         /// <summary>
