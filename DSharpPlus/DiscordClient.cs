@@ -2727,44 +2727,23 @@ namespace DSharpPlus
             this._guilds = null;
             this._heartbeatTask = null;
             this._privateChannels = null;
-            this._webSocketClient.DisconnectAsync().ConfigureAwait(false).GetAwaiter().GetResult();
             this._webSocketClient.Dispose();
         }
 
         // this shit should never be in vanilla D#+
         #region Helpers 
 
-        public Task SendSocketMessageAsync(string message) => _webSocketClient.SendMessageAsync(message);
+        public Task SendSocketMessageAsync(string message) 
+            => _webSocketClient.SendMessageAsync(message);
 
         public bool TryGetCachedGuild(ulong id, out DiscordGuild guild)
-        {
-            if ((guild = this.InternalGetCachedGuild(id)) != null)
-            {
-                return true;
-            }
-
-            return false;
-        }
+            => (guild = this.InternalGetCachedGuild(id)) != null;
 
         public bool TryGetCachedChannel(ulong id, out DiscordChannel channel)
-        {
-            if ((channel = this.InternalGetCachedChannel(id)) != null)
-            {
-                return true;
-            }
-
-            return false;
-        }
+            => (channel = this.InternalGetCachedChannel(id)) != null;
 
         public bool TryGetCachedUser(ulong id, out DiscordUser user)
-        {
-            if ((user = this.InternalGetCachedUser(id)) != null)
-            {
-                return true;
-            }
-
-            return false;
-        }
+            => (user = this.InternalGetCachedUser(id)) != null;
 
         public DiscordMessage CreateMockMessage(string content, DiscordUser author, DiscordChannel channel = null, DateTimeOffset timestamp = default)
             => new MockMessage(this, content, author, channel, timestamp);
