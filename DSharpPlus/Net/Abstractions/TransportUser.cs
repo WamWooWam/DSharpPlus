@@ -49,7 +49,8 @@ namespace DSharpPlus.Net.Abstractions
             this.MfaEnabled = other.MfaEnabled;
             this.Verified = other.Verified;
             this.Email = other.Email;
-            this.PremiumType = other.PremiumType;
+            if (other.PremiumType.HasValue)
+                this.PremiumType = other.PremiumType;
             this.Locale = other.Locale;
             this.Flags = other.Flags;
         }

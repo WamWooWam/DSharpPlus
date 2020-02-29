@@ -219,6 +219,15 @@ namespace DSharpPlus.Entities
             get => this.User.Locale;
             internal set => this.User.Locale = value;
         }
+
+        /// <summary>
+        /// Gets the user's premium type
+        /// </summary>
+        public override PremiumType? PremiumType
+        {
+            get => this.User.PremiumType;
+            internal set => this.User.PremiumType = value;
+        }
         #endregion
 
         /// <summary>

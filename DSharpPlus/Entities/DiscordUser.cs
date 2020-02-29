@@ -26,7 +26,8 @@ namespace DSharpPlus.Entities
             this.MfaEnabled = transport.MfaEnabled;
             this.Verified = transport.Verified;
             this.Email = transport.Email;
-            this.PremiumType = transport.PremiumType;
+            if (transport.PremiumType.HasValue)
+                this.PremiumType = transport.PremiumType;
             this.Locale = transport.Locale;
         }
 

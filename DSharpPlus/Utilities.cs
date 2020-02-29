@@ -1,12 +1,12 @@
-﻿using System;
+﻿using DSharpPlus.Entities;
+using DSharpPlus.Net;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
-using DSharpPlus.Entities;
-using DSharpPlus.Net;
 using Unicord;
 
 namespace DSharpPlus
@@ -60,7 +60,6 @@ namespace DSharpPlus
             old.Username = usr.Username;
             old.Discriminator = usr.Discriminator;
             old.AvatarHash = usr.AvatarHash;
-            old.PremiumType = usr.PremiumType;
             return old;
         }
 
@@ -70,7 +69,7 @@ namespace DSharpPlus
             return r.Next(ping, int.MaxValue);
         }
 
-        public static string GetApiBaseUri() 
+        public static string GetApiBaseUri()
             => Endpoints.BASE_URI;
 
         public static Uri GetApiUriFor(string path)
@@ -85,7 +84,7 @@ namespace DSharpPlus
         }
 
         public static string GetFormattedToken(DiscordConfiguration config)
-        { 
+        {
             switch (config.TokenType)
             {
                 case TokenType.Bearer:
@@ -227,7 +226,7 @@ namespace DSharpPlus
         {
             return dto.ToUnixTimeMilliseconds();
         }
-        
+
         /// <summary>
         /// Converts this <see cref="Permissions"/> into human-readable format.
         /// </summary>
