@@ -338,15 +338,15 @@ namespace DSharpPlus.Entities
         /// Pins the message in its channel.
         /// </summary>
         /// <returns></returns>
-        public Task PinAsync()
-            => this.Discord.ApiClient.PinMessageAsync(this.ChannelId, Id);
+        public Task PinAsync() 
+            => this.Discord.ApiClient.PinMessageAsync(this.ChannelId, this.Id);
 
         /// <summary>
         /// Unpins the message in its channel.
         /// </summary>
         /// <returns></returns>
-        public Task UnpinAsync()
-            => this.Discord.ApiClient.UnpinMessageAsync(this.ChannelId, Id);
+        public Task UnpinAsync() 
+            => this.Discord.ApiClient.UnpinMessageAsync(this.ChannelId, this.Id);
 
         /// <summary>
         /// Responds to the message.
@@ -404,7 +404,12 @@ namespace DSharpPlus.Entities
         /// <param name="embed">Embed to attach to the message.</param>
         /// <returns>The sent message.</returns>
         public Task<DiscordMessage> RespondWithFilesAsync(Dictionary<string, Stream> files, string content = null, bool tts = false, DiscordEmbed embed = null)
-            => this.Discord.ApiClient.UploadFilesAsync(ChannelId, files, content, tts, embed);
+        {
+            if (files.Count > 10)
+                throw new ArgumentException("Cannot send more than 10 files with a single message.");
+
+            return this.Discord.ApiClient.UploadFilesAsync(this.ChannelId, files, content, tts, embed);
+        }
 
         /// <summary>
         /// Creates a reaction to this message

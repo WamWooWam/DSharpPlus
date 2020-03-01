@@ -196,8 +196,8 @@ namespace DSharpPlus
             this._guilds.Clear();
             this._presences.Clear();
 
-            if (Configuration.UseInternalLogHandler)
-                DebugLogger.LogMessageReceived += (sender, e) => DebugLogger.LogHandler(sender, e);
+            if (this.Configuration.UseInternalLogHandler)
+                this.DebugLogger.LogMessageReceived += (sender, e) => this.DebugLogger.LogHandler(sender, e);
         }
 
         /// <summary>
@@ -208,7 +208,7 @@ namespace DSharpPlus
         public void AddExtension(BaseExtension ext)
         {
             ext.Setup(this);
-            _extensions.Add(ext);
+            this._extensions.Add(ext);
         }
 
         /// <summary>
@@ -217,7 +217,7 @@ namespace DSharpPlus
         /// <typeparam name="T">Type of extension to retrieve.</typeparam>
         /// <returns>The requested extension.</returns>
         public T GetExtension<T>() where T : BaseExtension
-            => _extensions.FirstOrDefault(x => x.GetType() == typeof(T)) as T;
+            => this._extensions.FirstOrDefault(x => x.GetType() == typeof(T)) as T;
 
         /// <summary>
         /// Connects to the gateway
@@ -371,13 +371,13 @@ namespace DSharpPlus
         public Task ReconnectAsync(bool startNewSession = false)
         {
             if (startNewSession)
-                _sessionId = "";
+                this._sessionId = "";
 
-            return _webSocketClient.DisconnectAsync();
+            return this._webSocketClient.DisconnectAsync();
         }
 
         internal Task InternalReconnectAsync()
-            => ConnectAsync();
+            => this.ConnectAsync();
 
         internal async Task InternalConnectAsync()
         {
@@ -429,7 +429,7 @@ namespace DSharpPlus
                 : null;
 
             this._cancelTokenSource = new CancellationTokenSource();
-            this._cancelToken = _cancelTokenSource.Token;
+            this._cancelToken = this._cancelTokenSource.Token;
 
             this._webSocketClient.Connected += SocketOnConnect;
             this._webSocketClient.Disconnected += SocketOnDisconnect;
@@ -493,9 +493,9 @@ namespace DSharpPlus
                 this.DebugLogger.LogMessage(LogLevel.Debug, "Websocket", $"Connection closed. ({e.CloseCode.ToString(CultureInfo.InvariantCulture)}, '{e.CloseMessage}')", DateTime.Now);
                 await this._socketClosed.InvokeAsync(new SocketCloseEventArgs(this) { CloseCode = e.CloseCode, CloseMessage = e.CloseMessage }).ConfigureAwait(false);
 
-                if (Configuration.AutoReconnect)
+                if (this.Configuration.AutoReconnect)
                 {
-                    DebugLogger.LogMessage(LogLevel.Critical, "Websocket", $"Socket connection terminated ({e.CloseCode.ToString(CultureInfo.InvariantCulture)}, '{e.CloseMessage}'). Reconnecting.", DateTime.Now);
+                    this.DebugLogger.LogMessage(LogLevel.Critical, "Websocket", $"Socket connection terminated ({e.CloseCode.ToString(CultureInfo.InvariantCulture)}, '{e.CloseMessage}'). Reconnecting.", DateTime.Now);
 
                     if (this._status == null)
                         await this.ConnectAsync().ConfigureAwait(false);
@@ -514,9 +514,9 @@ namespace DSharpPlus
         /// <returns></returns>
         public async Task DisconnectAsync()
         {
-            Configuration.AutoReconnect = false;
+            this.Configuration.AutoReconnect = false;
             if (this._webSocketClient != null)
-                await _webSocketClient.DisconnectAsync().ConfigureAwait(false);
+                await this._webSocketClient.DisconnectAsync().ConfigureAwait(false);
         }
 
         #region Public Functions
@@ -592,7 +592,7 @@ namespace DSharpPlus
         {
             if (this._guilds.TryGetValue(id, out var guild))
                 return guild;
-
+            
             guild = await this.ApiClient.GetGuildAsync(id).ConfigureAwait(false);
             var channels = await this.ApiClient.GetGuildChannelsAsync(guild.Id).ConfigureAwait(false);
             foreach (var channel in channels) guild._channels[channel.Id] = channel;
@@ -698,7 +698,7 @@ namespace DSharpPlus
                     break;
 
                 default:
-                    DebugLogger.LogMessage(LogLevel.Warning, "Websocket", $"Unknown OP-Code: {((int)payload.OpCode).ToString(CultureInfo.InvariantCulture)}\n{payload.Data}", DateTime.Now);
+                    this.DebugLogger.LogMessage(LogLevel.Warning, "Websocket", $"Unknown OP-Code: {((int)payload.OpCode).ToString(CultureInfo.InvariantCulture)}\n{payload.Data}", DateTime.Now);
                     break;
             }
         }
@@ -912,7 +912,7 @@ namespace DSharpPlus
 
                 default:
                     await OnUnknownEventAsync(payload).ConfigureAwait(false);
-                    DebugLogger.LogMessage(LogLevel.Warning, "Websocket:Dispatch", $"Unknown event: {payload.EventName}\n{payload.Data}", DateTime.Now);
+                    this.DebugLogger.LogMessage(LogLevel.Warning, "Websocket:Dispatch", $"Unknown event: {payload.EventName}\n{payload.Data}", DateTime.Now);
                     break;
             }
         }
@@ -1133,7 +1133,7 @@ namespace DSharpPlus
                     .Select(xtu => this.InternalGetCachedUser(xtu.Id) ?? new DiscordUser(xtu) { Discord = this });
                 dmChannel._recipients = recips.ToList();
 
-                _privateChannels[dmChannel.Id] = dmChannel;
+                this._privateChannels[dmChannel.Id] = dmChannel;
 
                 await this._dmChannelCreated.InvokeAsync(new DmChannelCreateEventArgs(this) { Channel = dmChannel }).ConfigureAwait(false);
             }
@@ -1146,7 +1146,7 @@ namespace DSharpPlus
                     xo._channel_id = channel.Id;
                 }
 
-                _guilds[channel.GuildId]._channels[channel.Id] = channel;
+                this._guilds[channel.GuildId]._channels[channel.Id] = channel;
 
                 await this._channelCreated.InvokeAsync(new ChannelCreateEventArgs(this) { Channel = channel, Guild = channel.Guild }).ConfigureAwait(false);
             }
@@ -1369,12 +1369,21 @@ namespace DSharpPlus
                     IsUnavailable = gld.IsUnavailable,
                     JoinedAt = gld.JoinedAt,
                     MemberCount = gld.MemberCount,
+                    MaxMembers = gld.MaxMembers,
+                    MaxPresences = gld.MaxPresences,
+                    DiscoverySplashHash = gld.DiscoverySplashHash,
+                    PreferredLocale = gld.PreferredLocale,
                     MfaLevel = gld.MfaLevel,
                     OwnerId = gld.OwnerId,
                     SplashHash = gld.SplashHash,
                     SystemChannelId = gld.SystemChannelId,
+                    SystemChannelFlags = gld.SystemChannelFlags,
+                    WidgetEnabled = gld.WidgetEnabled,
+                    WidgetChannelId = gld.WidgetChannelId,
                     VerificationLevel = gld.VerificationLevel,
-                    VoiceRegionId = gld.VoiceRegionId,
+                    RulesChannelId = gld.RulesChannelId,
+                    PublicUpdatesChannelId = gld.PublicUpdatesChannelId,
+                    VoiceRegionId = gld.VoiceRegionId,   
                     _channels = new ConcurrentDictionary<ulong, DiscordChannel>(),
                     _emojis = new ConcurrentDictionary<ulong, DiscordEmoji>(),
                     _members = new ConcurrentDictionary<ulong, DiscordMember>(),
@@ -1717,7 +1726,7 @@ namespace DSharpPlus
         internal async Task OnGuildRoleDeleteEventAsync(ulong roleId, DiscordGuild guild)
         {
             if (!guild._roles.TryRemove(roleId, out var role))
-                throw new InvalidOperationException("Attempted to delete a nonexistent role");
+                throw new InvalidOperationException("Attempted to delete a nonexistent role.");
 
             var ea = new GuildRoleDeleteEventArgs(this)
             {
@@ -1767,7 +1776,7 @@ namespace DSharpPlus
             message.Discord = this;
 
             if (message.Channel == null)
-                DebugLogger.LogMessage(LogLevel.Warning, "Event", "Could not find channel last message belonged to.", DateTime.Now);
+                this.DebugLogger.LogMessage(LogLevel.Warning, "Event", "Could not find channel last message belonged to.", DateTime.Now);
             else
                 message.Channel.LastMessageId = message.Id;
 
@@ -1796,7 +1805,7 @@ namespace DSharpPlus
             {
                 if (guild != null)
                 {
-                    mentionedUsers = Utilities.GetUserMentions(message).Select(xid => guild._members.TryGetValue(xid, out var member) ? member : null).Cast<DiscordUser>().ToList();
+                    mentionedUsers = Utilities.GetUserMentions(message).Select(xid => guild._members.TryGetValue(xid, out var member) ? member : new DiscordUser { Id = xid, Discord = this }).Cast<DiscordUser>().ToList();
                     mentionedRoles = Utilities.GetRoleMentions(message).Select(xid => guild.GetRole(xid)).ToList();
                     mentionedChannels = Utilities.GetChannelMentions(message).Select(xid => guild.GetChannel(xid)).ToList();
                 }
@@ -2653,12 +2662,23 @@ namespace DSharpPlus
             guild.VoiceRegionId = newGuild.VoiceRegionId;
             guild.SplashHash = newGuild.SplashHash;
             guild.VerificationLevel = newGuild.VerificationLevel;
+            guild.WidgetEnabled = newGuild.WidgetEnabled;
+            guild.WidgetChannelId = newGuild.WidgetChannelId;
             guild.ExplicitContentFilter = newGuild.ExplicitContentFilter;
             guild.PremiumTier = newGuild.PremiumTier;
             guild.PremiumSubscriptionCount = newGuild.PremiumSubscriptionCount;
             guild.Banner = newGuild.Banner;
             guild.Description = newGuild.Description;
             guild.VanityUrlCode = newGuild.VanityUrlCode;
+            guild.Banner = newGuild.Banner;
+            guild.SystemChannelId = newGuild.SystemChannelId;
+            guild.SystemChannelFlags = newGuild.SystemChannelFlags;
+            guild.DiscoverySplashHash = newGuild.DiscoverySplashHash;
+            guild.MaxMembers = newGuild.MaxMembers;
+            guild.MaxPresences = newGuild.MaxPresences;
+            guild.PreferredLocale = newGuild.PreferredLocale;
+            guild.RulesChannelId = newGuild.RulesChannelId;
+            guild.PublicUpdatesChannelId = newGuild.PublicUpdatesChannelId;
 
             // fields not sent for update:
             // - guild.Channels
@@ -2685,7 +2705,7 @@ namespace DSharpPlus
             var jo = JObject.Parse(response.Response);
             this._gatewayUri = new Uri(jo.Value<string>("url"));
             if (jo["shards"] != null)
-                _shardCount = jo.Value<int>("shards");
+                this._shardCount = jo.Value<int>("shards");
         }
 
         private SocketLock GetSocketLock()
@@ -2693,7 +2713,7 @@ namespace DSharpPlus
 
         ~DiscordClient()
         {
-            Dispose();
+            this.Dispose();
         }
 
         private bool _disposed;

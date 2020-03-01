@@ -7,11 +7,12 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using DSharpPlus.Net.Abstractions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using DSharpPlus.Enums;
 using DSharpPlus.Net.Models;
 using DSharpPlus.Net.Serialization;
+using DSharpPlus.Net.Abstractions;
 
 namespace DSharpPlus.Entities
 {
@@ -54,6 +55,26 @@ namespace DSharpPlus.Entities
         [JsonIgnore]
         public string SplashUrl
             => !string.IsNullOrWhiteSpace(this.SplashHash) ? $"https://cdn.discordapp.com/splashes/{this.Id.ToString(CultureInfo.InvariantCulture)}/{SplashHash}.jpg" : null;
+
+        /// <summary>
+        /// Gets the guild discovery splash's hash.
+        /// </summary>
+        [JsonProperty("discovery_splash", NullValueHandling = NullValueHandling.Ignore)]
+        public string DiscoverySplashHash { get; internal set; }
+
+        /// <summary>
+        /// Gets the guild discovery splash's url.
+        /// </summary>
+        [JsonIgnore]
+        public string DiscoverySplashUrl
+            => !string.IsNullOrWhiteSpace(this.DiscoverySplashHash) ? $"https://cdn.discordapp.com/discovery-splashes/{this.Id.ToString(CultureInfo.InvariantCulture)}/{DiscoverySplashHash}.jpg" : null;
+
+        /// <summary>
+        /// Gets the preferred locale of this guild.
+        /// <para>This is used for server discovery and notices from Discord. Defaults to en-US.</para>
+        /// </summary>
+        [JsonProperty("preferred_locale", NullValueHandling = NullValueHandling.Ignore)]
+        public string PreferredLocale { get; internal set; }
 
         /// <summary>
         /// Gets the ID of the guild's owner.
@@ -149,12 +170,65 @@ namespace DSharpPlus.Entities
         internal ulong? SystemChannelId { get; set; }
 
         /// <summary>
-        /// Gets the channel to which system messages (such as join notifications) are sent.
+        /// Gets the channel where system messages (such as boost and welcome messages) are sent.
         /// </summary>
         [JsonIgnore]
-        public DiscordChannel SystemChannel => SystemChannelId.HasValue
-            ? this.GetChannel(SystemChannelId.Value)
+        public DiscordChannel SystemChannel => this.SystemChannelId.HasValue
+            ? this.GetChannel(this.SystemChannelId.Value)
             : null;
+
+        /// <summary>
+        /// Gets the settings for this guild's system channel.
+        /// </summary>
+        [JsonProperty("system_channel_flags")]
+        public SystemChannelFlags SystemChannelFlags { get; internal set; }
+
+        /// <summary>
+        /// Gets whether this guild's widget is enabled.
+        /// </summary>
+        [JsonProperty("widget_enabled", NullValueHandling = NullValueHandling.Ignore)]
+        public bool? WidgetEnabled { get; internal set; }
+
+        [JsonProperty("widget_channel_id", NullValueHandling = NullValueHandling.Ignore)]
+        internal ulong? WidgetChannelId { get; set; }
+
+        /// <summary>
+        /// Gets the widget channel for this guild.
+        /// </summary>
+        [JsonIgnore]
+        public DiscordChannel WidgetChannel => this.WidgetChannelId.HasValue
+            ? this.GetChannel(this.WidgetChannelId.Value)
+            : null;
+
+        [JsonProperty("rules_channel_id")]
+        internal ulong? RulesChannelId { get; set; }
+
+        /// <summary>
+        /// Gets the rules channel for this guild.
+        /// <para>This is only available if the guild is considered "discoverable".</para>
+        /// </summary>
+        [JsonIgnore]
+        public DiscordChannel RulesChannel => this.RulesChannelId.HasValue
+            ? this.GetChannel(this.RulesChannelId.Value)
+            : null;
+
+        [JsonProperty("public_updates_channel_id")]
+        internal ulong? PublicUpdatesChannelId { get; set; }
+
+        /// <summary>
+        /// Gets the public updates channel (where admins and moderators receive messages from Discord) for this guild.
+        /// <para>This is only available if the guild is considered "discoverable".</para>
+        /// </summary>
+        [JsonIgnore]
+        public DiscordChannel PublicUpdatesChannel => this.PublicUpdatesChannelId.HasValue
+            ? this.GetChannel(this.PublicUpdatesChannelId.Value)
+            : null;
+
+        /// <summary>
+        /// Gets the application id of this guild if it is bot created.
+        /// </summary>
+        [JsonProperty("application_id")]
+        public ulong? ApplicationId { get; internal set; }
 
         /// <summary>
         /// Gets a collection of this guild's roles.
@@ -211,6 +285,18 @@ namespace DSharpPlus.Entities
         /// </summary>
         [JsonProperty("member_count", NullValueHandling = NullValueHandling.Ignore)]
         public int MemberCount { get; internal set; }
+
+        /// <summary>
+        /// Gets the maximum amount of members allowed for this guild.
+        /// </summary>
+        [JsonProperty("max_members")]
+        public int? MaxMembers { get; internal set; }
+
+        /// <summary>
+        /// Gets the maximum amount of presences allowed for this guild.
+        /// </summary>
+        [JsonProperty("max_presences")]
+        public int? MaxPresences { get; internal set; }
 
         /// <summary>
         /// Gets a dictionary of all the voice states for this guilds. The key for this dictionary is the ID of the user
@@ -271,16 +357,23 @@ namespace DSharpPlus.Entities
         public string VanityUrlCode { get; internal set; }
 
         /// <summary>
-        /// Gets guild description, when applicable.
+        /// Gets the guild description, when applicable.
         /// </summary>
         [JsonProperty("description")]
         public string Description { get; internal set; }
 
         /// <summary>
-        /// Gets guild banner hash, when applicable.
+        /// Gets this guild's banner hash, when applicable.
         /// </summary>
         [JsonProperty("banner")]
         public string Banner { get; internal set; }
+
+        /// <summary>
+        /// Gets this guild's banner in url form.
+        /// </summary>
+        [JsonIgnore]
+        public string BannerUrl
+            => !string.IsNullOrWhiteSpace(this.Banner) ? $"https://cdn.discordapp.com/banners/{this.Id}/{this.Banner}" : null;
 
         /// <summary>
         /// Gets this guild's premium tier (Nitro boosting).
@@ -293,6 +386,7 @@ namespace DSharpPlus.Entities
         /// </summary>
         [JsonProperty("premium_subscription_count", NullValueHandling = NullValueHandling.Ignore)]
         public int? PremiumSubscriptionCount { get; internal set; }
+
         // Seriously discord?
 
         [JsonIgnore]
@@ -593,11 +687,54 @@ namespace DSharpPlus.Entities
             => this.Discord.ApiClient.GetGuildInvitesAsync(this.Id);
 
         /// <summary>
+        /// Gets the vanity invite for this guild.
+        /// </summary>
+        /// <returns>A partial vanity invite.</returns>
+        public Task<DiscordInvite> GetVanityInviteAsync()
+            => this.Discord.ApiClient.GetGuildVanityUrlAsync(this.Id);
+        
+
+        /// <summary>
         /// Gets all the webhooks created for all the channels in this guild.
         /// </summary>
         /// <returns>A collection of webhooks this guild has.</returns>
         public Task<IReadOnlyList<DiscordWebhook>> GetWebhooksAsync()
             => this.Discord.ApiClient.GetGuildWebhooksAsync(this.Id);
+
+        /// <summary>
+        /// Gets this guild's widget image.
+        /// </summary>
+        /// <param name="bannerType">The format of the widget.</param>
+        /// <returns>The URL of the widget image.</returns>
+        public string GetWidgetImage(WidgetType bannerType = WidgetType.Shield)
+        {
+            string param;
+
+            switch(bannerType)
+            {
+                case WidgetType.Banner1:
+                    param = "banner1";
+                    break;
+
+                case WidgetType.Banner2:
+                    param = "banner2";
+                    break;
+
+                case WidgetType.Banner3:
+                    param = "banner3";
+                    break;
+
+                case WidgetType.Banner4:
+                    param = "banner4";
+                    break;
+
+                default:
+                    param = "shield";
+                    break;
+            }
+
+            return $"{Net.Endpoints.BASE_URI}{Net.Endpoints.GUILDS}/{this.Id}{Net.Endpoints.WIDGET_PNG}?style={param}";
+        }
 
         /// <summary>
         /// Gets a member of this guild by his user ID.
@@ -820,8 +957,8 @@ namespace DSharpPlus.Entities
 
                                     entrygld.AfkChannelChange = new PropertyChange<DiscordChannel>
                                     {
-                                        Before = this.GetChannel(t1),
-                                        After = this.GetChannel(t2)
+                                        Before = this.GetChannel(t1) ?? new DiscordChannel { Id = t1, Discord = this.Discord, GuildId = this.Id },
+                                        After = this.GetChannel(t2) ?? new DiscordChannel { Id = t1, Discord = this.Discord, GuildId = this.Id }
                                     };
                                     break;
 
@@ -831,8 +968,8 @@ namespace DSharpPlus.Entities
 
                                     entrygld.EmbedChannelChange = new PropertyChange<DiscordChannel>
                                     {
-                                        Before = this.GetChannel(t1),
-                                        After = this.GetChannel(t2)
+                                        Before = this.GetChannel(t1) ?? new DiscordChannel { Id = t1, Discord = this.Discord, GuildId = this.Id },
+                                        After = this.GetChannel(t2) ?? new DiscordChannel { Id = t1, Discord = this.Discord, GuildId = this.Id }
                                     };
                                     break;
 
@@ -858,8 +995,8 @@ namespace DSharpPlus.Entities
 
                                     entrygld.SystemChannelChange = new PropertyChange<DiscordChannel>
                                     {
-                                        Before = this.GetChannel(t1),
-                                        After = this.GetChannel(t2)
+                                        Before = this.GetChannel(t1) ?? new DiscordChannel { Id = t1, Discord = this.Discord, GuildId = this.Id },
+                                        After = this.GetChannel(t2) ?? new DiscordChannel { Id = t1, Discord = this.Discord, GuildId = this.Id }
                                     };
                                     break;
 
@@ -879,6 +1016,14 @@ namespace DSharpPlus.Entities
                                     };
                                     break;
 
+                                case "region":
+                                    entrygld.RegionChange = new PropertyChange<string>
+                                    {
+                                        Before = xc.OldValueString,
+                                        After = xc.NewValueString
+                                    };
+                                    break;
+                             
                                 default:
                                     this.Discord.DebugLogger.LogMessage(LogLevel.Warning, "DSharpPlus", $"Unknown key in guild update: {xc.Key}; this should be reported to devs", DateTime.Now);
                                     break;
@@ -891,7 +1036,7 @@ namespace DSharpPlus.Entities
                     case AuditLogActionType.ChannelUpdate:
                         entry = new DiscordAuditLogChannelEntry
                         {
-                            Target = this.GetChannel(xac.TargetId.Value) ?? new DiscordChannel { Id = xac.TargetId.Value }
+                            Target = this.GetChannel(xac.TargetId.Value) ?? new DiscordChannel { Id = xac.TargetId.Value, Discord = this.Discord, GuildId = this.Id }
                         };
 
                         var entrychn = entry as DiscordAuditLogChannelEntry;
@@ -1038,7 +1183,7 @@ namespace DSharpPlus.Entities
                     case AuditLogActionType.Kick:
                         entry = new DiscordAuditLogKickEntry
                         {
-                            Target = amd.TryGetValue(xac.TargetId.Value, out var kickMember) ? kickMember : new DiscordMember { Id = xac.TargetId.Value }
+                            Target = amd.TryGetValue(xac.TargetId.Value, out var kickMember) ? kickMember : new DiscordMember { Id = xac.TargetId.Value, Discord = this.Discord, _guild_id = this.Id }
                         };
                         break;
 
@@ -1054,7 +1199,7 @@ namespace DSharpPlus.Entities
                     case AuditLogActionType.Unban:
                         entry = new DiscordAuditLogBanEntry
                         {
-                            Target = amd.TryGetValue(xac.TargetId.Value, out var unbanMember) ? unbanMember : new DiscordMember { Id = xac.TargetId.Value }
+                            Target = amd.TryGetValue(xac.TargetId.Value, out var unbanMember) ? unbanMember : new DiscordMember { Id = xac.TargetId.Value, Discord = this.Discord, _guild_id = this.Id }
                         };
                         break;
 
@@ -1062,7 +1207,7 @@ namespace DSharpPlus.Entities
                     case AuditLogActionType.MemberRoleUpdate:
                         entry = new DiscordAuditLogMemberUpdateEntry
                         {
-                            Target = amd.TryGetValue(xac.TargetId.Value, out var roleUpdMember) ? roleUpdMember : new DiscordMember { Id = xac.TargetId.Value }
+                            Target = amd.TryGetValue(xac.TargetId.Value, out var roleUpdMember) ? roleUpdMember : new DiscordMember { Id = xac.TargetId.Value, Discord = this.Discord, _guild_id = this.Id }
                         };
 
                         var entrymbu = entry as DiscordAuditLogMemberUpdateEntry;
@@ -1114,7 +1259,7 @@ namespace DSharpPlus.Entities
                     case AuditLogActionType.RoleUpdate:
                         entry = new DiscordAuditLogRoleUpdateEntry
                         {
-                            Target = this.GetRole(xac.TargetId.Value) ?? new DiscordRole { Id = xac.TargetId.Value }
+                            Target = this.GetRole(xac.TargetId.Value) ?? new DiscordRole { Id = xac.TargetId.Value, Discord = this.Discord }
                         };
 
                         var entryrol = entry as DiscordAuditLogRoleUpdateEntry;
@@ -1237,8 +1382,8 @@ namespace DSharpPlus.Entities
 
                                     entryinv.InviterChange = new PropertyChange<DiscordMember>
                                     {
-                                        Before = amd.TryGetValue(t1, out var propBeforeMember) ? propBeforeMember : null,
-                                        After = amd.TryGetValue(t2, out var propAfterMember) ? propAfterMember : null,
+                                        Before = amd.TryGetValue(t1, out var propBeforeMember) ? propBeforeMember : new DiscordMember { Id = t1, Discord = this.Discord, _guild_id = this.Id },
+                                        After = amd.TryGetValue(t2, out var propAfterMember) ? propAfterMember : new DiscordMember { Id = t1, Discord = this.Discord, _guild_id = this.Id },
                                     };
                                     break;
 
@@ -1248,8 +1393,8 @@ namespace DSharpPlus.Entities
 
                                     entryinv.ChannelChange = new PropertyChange<DiscordChannel>
                                     {
-                                        Before = p1 ? this.GetChannel(t1) : null,
-                                        After = p2 ? this.GetChannel(t2) : null
+                                        Before = p1 ? this.GetChannel(t1) ?? new DiscordChannel { Id = t1, Discord = this.Discord, GuildId = this.Id } : null,
+                                        After = p2 ? this.GetChannel(t2) ?? new DiscordChannel { Id = t1, Discord = this.Discord, GuildId = this.Id } : null
                                     };
 
                                     var ch = entryinv.ChannelChange.Before ?? entryinv.ChannelChange.After;
@@ -1299,7 +1444,7 @@ namespace DSharpPlus.Entities
                     case AuditLogActionType.WebhookUpdate:
                         entry = new DiscordAuditLogWebhookEntry
                         {
-                            Target = ahd.TryGetValue(xac.TargetId.Value, out var webhook) ? webhook : new DiscordWebhook { Id = xac.TargetId.Value }
+                            Target = ahd.TryGetValue(xac.TargetId.Value, out var webhook) ? webhook : new DiscordWebhook { Id = xac.TargetId.Value, Discord = this.Discord }
                         };
 
                         var entrywhk = entry as DiscordAuditLogWebhookEntry;
@@ -1321,8 +1466,8 @@ namespace DSharpPlus.Entities
 
                                     entrywhk.ChannelChange = new PropertyChange<DiscordChannel>
                                     {
-                                        Before = p1 ? this.GetChannel(t1) : null,
-                                        After = p2 ? this.GetChannel(t2) : null
+                                        Before = p1 ? this.GetChannel(t1) ?? new DiscordChannel { Id = t1, Discord = this.Discord, GuildId = this.Id } : null,
+                                        After = p2 ? this.GetChannel(t2) ?? new DiscordChannel { Id = t1, Discord = this.Discord, GuildId = this.Id } : null
                                     };
                                     break;
 
@@ -1357,7 +1502,7 @@ namespace DSharpPlus.Entities
                     case AuditLogActionType.EmojiUpdate:
                         entry = new DiscordAuditLogEmojiEntry
                         {
-                            Target = this._emojis.TryGetValue(xac.TargetId.Value, out var target) ? target : new DiscordEmoji { Id = xac.TargetId.Value }
+                            Target = this._emojis.TryGetValue(xac.TargetId.Value, out var target) ? target : new DiscordEmoji { Id = xac.TargetId.Value, Discord = this.Discord }
                         };
 
                         var entryemo = entry as DiscordAuditLogEmojiEntry;
@@ -1389,7 +1534,7 @@ namespace DSharpPlus.Entities
 
                             if (xac.Options != null)
                             {
-                                entrymsg.Channel = this.GetChannel(xac.Options.ChannelId) ?? new DiscordChannel { Id = xac.Options.ChannelId };
+                                entrymsg.Channel = this.GetChannel(xac.Options.ChannelId) ?? new DiscordChannel { Id = xac.Options.ChannelId, Discord = this.Discord, GuildId = this.Id };
                                 entrymsg.MessageCount = xac.Options.Count;
                             }
 
@@ -1420,14 +1565,14 @@ namespace DSharpPlus.Entities
                             {
                                 dc.MessageCache.TryGet(x => x.Id == xac.Options.MessageId && x.ChannelId == xac.Options.ChannelId, out var message);
 
-                                entrypin.Channel = this.GetChannel(xac.Options.ChannelId) ?? new DiscordChannel { Id = xac.Options.ChannelId };
-                                entrypin.Message = message ?? new DiscordMessage { Id = xac.Options.MessageId };
+                                entrypin.Channel = this.GetChannel(xac.Options.ChannelId) ?? new DiscordChannel { Id = xac.Options.ChannelId, Discord = this.Discord, GuildId = this.Id };
+                                entrypin.Message = message ?? new DiscordMessage { Id = xac.Options.MessageId, Discord = this.Discord };
                             }
 
                             if (xac.TargetId.HasValue)
                             {
                                 dc.UserCache.TryGetValue(xac.TargetId.Value, out var user);
-                                entrypin.Target = user ?? new DiscordUser { Id = user.Id };
+                                entrypin.Target = user ?? new DiscordUser { Id = user.Id, Discord = this.Discord };
                             }
 
                             break;
@@ -1443,7 +1588,7 @@ namespace DSharpPlus.Entities
                             }
 
                             dc.UserCache.TryGetValue(xac.TargetId.Value, out var bot);
-                            (entry as DiscordAuditLogBotAddEntry).TargetBot = bot ?? new DiscordUser { Id = xac.TargetId.Value };
+                            (entry as DiscordAuditLogBotAddEntry).TargetBot = bot ?? new DiscordUser { Id = xac.TargetId.Value, Discord = this.Discord };
 
                             break;
                         }
@@ -1459,7 +1604,7 @@ namespace DSharpPlus.Entities
                         var moveentry = entry as DiscordAuditLogMemberMoveEntry;
 
                         moveentry.UserCount = xac.Options.Count;
-                        moveentry.Channel = this.GetChannel(xac.Options.ChannelId) ?? new DiscordChannel { Id = xac.Options.ChannelId };
+                        moveentry.Channel = this.GetChannel(xac.Options.ChannelId) ?? new DiscordChannel { Id = xac.Options.ChannelId, Discord = this.Discord, GuildId = this.Id };
                         break;
 
                     case AuditLogActionType.MemberDisconnect:
@@ -1828,5 +1973,37 @@ namespace DSharpPlus.Entities
         /// Messages from all members are scanned.
         /// </summary>
         AllMembers = 2
+    }
+
+    /// <summary>
+    /// Represents the formats for a guild widget.
+    /// </summary>
+    public enum WidgetType : int
+    {
+        /// <summary>
+        /// The widget is represented in shield format.
+        /// <para>This is the default widget type.</para>
+        /// </summary>
+        Shield = 0,
+
+        /// <summary>
+        /// The widget is represented as the first banner type.
+        /// </summary>
+        Banner1 = 1,
+
+        /// <summary>
+        /// The widget is represented as the second banner type.
+        /// </summary>
+        Banner2 = 2,
+
+        /// <summary>
+        /// The widget is represented as the third banner type.
+        /// </summary>
+        Banner3 = 3,
+
+        /// <summary>
+        /// The widget is represented in the fourth banner type.
+        /// </summary>
+        Banner4 = 4
     }
 }
