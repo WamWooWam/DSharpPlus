@@ -430,7 +430,7 @@ namespace DSharpPlus.Entities
         /// <summary>
         /// Deletes another user's reaction.
         /// </summary>
-        /// <param name="emoji">Emoji for the reaction you want to remove, either an emoji or name:id</param>
+        /// <param name="emoji">Emoji for the reaction you want to remove, either an emoji or name:id.</param>
         /// <param name="user">Member you want to remove the reaction for</param>
         /// <param name="reason">Reason for audit logs.</param>
         /// <returns></returns>
@@ -438,7 +438,7 @@ namespace DSharpPlus.Entities
             => this.Discord.ApiClient.DeleteUserReactionAsync(this.ChannelId, this.Id, user.Id, emoji.ToReactionString(), reason);
 
         /// <summary>
-        /// Gets users that reacted with this emoji
+        /// Gets users that reacted with this emoji.
         /// </summary>
         /// <param name="emoji">Emoji to react with.</param>
         /// <param name="limit">Limit of users to fetch.</param>
@@ -448,12 +448,20 @@ namespace DSharpPlus.Entities
             => this.GetReactionsInternalAsync(emoji, limit, after);
 
         /// <summary>
-        /// Deletes all reactions for this message
+        /// Deletes all reactions for this message.
         /// </summary>
         /// <param name="reason">Reason for audit logs.</param>
         /// <returns></returns>
-        public Task DeleteAllReactionsAsync(string reason = null)
-            => this.Discord.ApiClient.DeleteAllReactionsAsync(this.Channel.Id, this.Id, reason);
+        public Task DeleteAllReactionsAsync(string reason = null) 
+            => this.Discord.ApiClient.DeleteAllReactionsAsync(this.ChannelId, this.Id, reason);
+
+        /// <summary>
+        /// Deletes all reactions of a specific reaction for this message.
+        /// </summary>
+        /// <param name="emoji">The emoji to clear, either an emoji or name:id.</param>
+        /// <returns></returns>
+        public Task DeleteReactionsEmojiAsync(DiscordEmoji emoji)
+            => this.Discord.ApiClient.DeleteReactionsEmojiAsync(this.ChannelId, this.Id, emoji.ToReactionString());
 
         /// <summary>
         /// Acknowledges the message. This is available to user tokens only.
