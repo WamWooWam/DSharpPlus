@@ -30,7 +30,7 @@ namespace DSharpPlus.Entities
         /// </summary>
         [JsonIgnore]
         public DiscordUser User
-            => Discord.InternalGetCachedUser(Id);
+            => Discord.TryGetCachedUserInternal(Id, out var user) ? user : null;
 
         [JsonProperty("type")]
         public DiscordRelationshipType RelationshipType { get => _relationshipType; internal set => OnPropertySet(ref _relationshipType, value); }

@@ -15,7 +15,7 @@ namespace DSharpPlus
     public abstract class BaseDiscordClient : NotifyPropertyChangeImpl, IDisposable
     {
         public DiscordApiClient ApiClient { get; }
-        internal protected DiscordConfiguration Configuration { get; }
+        public DiscordConfiguration Configuration { get; }
         internal protected ConcurrentDictionary<ulong, DiscordReadState> ReadStates { get; } = new ConcurrentDictionary<ulong, DiscordReadState>();
 
         /// <summary>
