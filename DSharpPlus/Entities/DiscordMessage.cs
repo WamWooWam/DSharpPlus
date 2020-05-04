@@ -1,5 +1,4 @@
 #pragma warning disable CS0618
-using DSharpPlus.Enums;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;

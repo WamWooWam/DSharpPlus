@@ -2868,7 +2868,7 @@ namespace DSharpPlus
             => (channel = this.InternalGetCachedChannel(id)) != null;
 
         public bool TryGetCachedUser(ulong id, out DiscordUser user)
-            => (user = this.InternalGetCachedUser(id)) != null;
+            => TryGetCachedUserInternal(id, out user);
 
         public DiscordMessage CreateMockMessage(string content, DiscordUser author, DiscordChannel channel = null, DateTimeOffset timestamp = default)
             => new MockMessage(this, content, author, channel, timestamp);
