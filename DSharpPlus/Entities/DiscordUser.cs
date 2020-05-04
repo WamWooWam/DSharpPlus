@@ -29,6 +29,8 @@ namespace DSharpPlus.Entities
             if (transport.PremiumType.HasValue)
                 this.PremiumType = transport.PremiumType;
             this.Locale = transport.Locale;
+            this.Flags = transport.Flags;
+            this.OAuthFlags = transport.OAuthFlags;
         }
 
         /// <summary>
@@ -111,13 +113,21 @@ namespace DSharpPlus.Entities
         public virtual bool? MfaEnabled { get; internal set; }
 
         /// <summary>
+        /// Gets whether the user is an official Discord system user.
+        /// </summary>
+        [JsonProperty("system", NullValueHandling = NullValueHandling.Ignore)]
+        public bool? IsSystem { get; internal set; }
+
+        /// <summary>
         /// Gets whether the user is verified.
+        /// <para>This is only present in OAuth.</para>
         /// </summary>
         [JsonProperty("verified", NullValueHandling = NullValueHandling.Ignore)]
         public virtual bool? Verified { get; internal set; }
 
         /// <summary>
         /// Gets the user's email address.
+        /// <para>This is only present in OAuth.</para>
         /// </summary>
         [JsonProperty("email", NullValueHandling = NullValueHandling.Ignore)]
         public virtual string Email { get; internal set; }
@@ -133,6 +143,18 @@ namespace DSharpPlus.Entities
         /// </summary>
         [JsonProperty("locale", NullValueHandling = NullValueHandling.Ignore)]
         public virtual string Locale { get; internal set; }
+
+        /// <summary>
+        /// Gets the user's flags for OAuth.
+        /// </summary>
+        [JsonProperty("flags", NullValueHandling = NullValueHandling.Ignore)]
+        public virtual UserFlags? OAuthFlags { get; internal set; }
+
+        /// <summary>
+        /// Gets the user's flags.
+        /// </summary>
+        [JsonProperty("public_flags", NullValueHandling = NullValueHandling.Ignore)]
+        public virtual UserFlags? Flags { get; internal set; }
 
         /// <summary>
         /// Gets the user's mention string.

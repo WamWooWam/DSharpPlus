@@ -78,7 +78,9 @@ namespace DSharpPlus
         public static Uri GetApiUriFor(string path, string queryString)
             => new Uri($"{GetApiBaseUri()}{path}{queryString}");
 
-        public static string GetFormattedToken(BaseDiscordClient client)
+        internal static QueryUriBuilder GetApiUriBuilderFor(string path)
+            => new QueryUriBuilder($"{GetApiBaseUri()}{path}");
+
         {
             return GetFormattedToken(client.Configuration);
         }
@@ -223,10 +225,8 @@ namespace DSharpPlus
         /// <param name="dto"><see cref="DateTimeOffset"/> to calculate Unix time for.</param>
         /// <returns>Calculated Unix time.</returns>
         public static long GetUnixTime(DateTimeOffset dto)
-        {
-            return dto.ToUnixTimeMilliseconds();
-        }
-
+            => dto.ToUnixTimeMilliseconds();
+        
         /// <summary>
         /// Converts this <see cref="Permissions"/> into human-readable format.
         /// </summary>

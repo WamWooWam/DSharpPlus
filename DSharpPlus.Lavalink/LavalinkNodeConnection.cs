@@ -64,6 +64,17 @@ namespace DSharpPlus.Lavalink
         private AsyncEvent<PlayerUpdateEventArgs> _playerUpdated;
 
         /// <summary>
+        /// Triggered whenever playback of a track starts.
+        /// <para>This is only available for version 3.3.1 and greater.</para>
+        /// </summary>
+        public event AsyncEventHandler<TrackStartEventArgs> PlaybackStarted
+        {
+            add { this._playbackStarted.Register(value); }
+            remove { this._playbackStarted.Unregister(value); }
+        }
+        private AsyncEvent<TrackStartEventArgs> _playbackStarted;
+
+        /// <summary>
         /// Triggered whenever playback of a track finishes.
         /// </summary>
         public event AsyncEventHandler<TrackFinishEventArgs> PlaybackFinished
@@ -99,7 +110,7 @@ namespace DSharpPlus.Lavalink
         public ConnectionEndpoint NodeEndpoint => this.Configuration.SocketEndpoint;
 
         /// <summary>
-        /// Gets whether this channel is still connected.
+        /// Gets whether the client is connected to Lavalink.
         /// </summary>
         public bool IsConnected => !Volatile.Read(ref this._isDisposed);
         private bool _isDisposed = false;
@@ -134,6 +145,7 @@ namespace DSharpPlus.Lavalink
             this._disconnected = new AsyncEvent<NodeDisconnectedEventArgs>(this.Discord.EventErrorHandler, "LAVALINK_NODE_DISCONNECTED");
             this._statsReceived = new AsyncEvent<StatisticsReceivedEventArgs>(this.Discord.EventErrorHandler, "LAVALINK_STATS_RECEIVED");
             this._playerUpdated = new AsyncEvent<PlayerUpdateEventArgs>(this.Discord.EventErrorHandler, "LAVALINK_PLAYER_UPDATED");
+            this._playbackStarted = new AsyncEvent<TrackStartEventArgs>(this.Discord.EventErrorHandler, "LAVALINK_PLAYBACK_STARTED");
             this._playbackFinished = new AsyncEvent<TrackFinishEventArgs>(this.Discord.EventErrorHandler, "LAVALINK_PLAYBACK_FINISHED");
             this._trackStuck = new AsyncEvent<TrackStuckEventArgs>(this.Discord.EventErrorHandler, "LAVALINK_TRACK_STUCK");
             this._trackException = new AsyncEvent<TrackExceptionEventArgs>(this.Discord.EventErrorHandler, "LAVALINK_TRACK_EXCEPTION");
@@ -235,8 +247,10 @@ namespace DSharpPlus.Lavalink
             var con = new LavalinkGuildConnection(this, channel, vstu);
             con.ChannelDisconnected += this.Con_ChannelDisconnected;
             con.PlayerUpdated += e => this._playerUpdated.InvokeAsync(e);
+            con.PlaybackStarted += e => this._playbackStarted.InvokeAsync(e);
             con.PlaybackFinished += e => this._playbackFinished.InvokeAsync(e);
             con.TrackStuck += e => this._trackStuck.InvokeAsync(e);
+            con.TrackException += e => this._trackException.InvokeAsync(e);
             this.ConnectedGuilds[channel.Guild.Id] = con;
 
             return con;
@@ -263,13 +277,12 @@ namespace DSharpPlus.Lavalink
 
             var json = et.Message;
             var jsonData = JObject.Parse(json);
-            ulong guildId = 0;
             switch (jsonData["op"].ToString())
             {
                 case "playerUpdate":
-                    guildId = (ulong)jsonData["guildId"];
+                    var gid = (ulong)jsonData["guildId"];
                     var state = jsonData["state"].ToObject<LavalinkState>();
-                    if (this.ConnectedGuilds.TryGetValue(guildId, out var lvl))
+                    if (this.ConnectedGuilds.TryGetValue(gid, out var lvl))
                         await lvl.InternalUpdatePlayerStateAsync(state).ConfigureAwait(false);
                     break;
 
@@ -281,10 +294,15 @@ namespace DSharpPlus.Lavalink
 
                 case "event":
                     var evtype = jsonData["type"].ToObject<EventType>();
+                    var guildId = (ulong)jsonData["guildId"];
                     switch (evtype)
                     {
+                        case EventType.TrackStartEvent:
+                            if (this.ConnectedGuilds.TryGetValue(guildId, out var lvl_evtst))
+                                await lvl_evtst.InternalPlaybackStartedAsync(jsonData["track"].ToString()).ConfigureAwait(false);
+                            break;
+
                         case EventType.TrackEndEvent:
-                            guildId = (ulong)jsonData["guildId"];
                             TrackEndReason reason = TrackEndReason.Cleanup;
                             switch (jsonData["reason"].ToString())
                             {
@@ -320,7 +338,14 @@ namespace DSharpPlus.Lavalink
 
                         case EventType.WebSocketClosedEvent:
                             if (this.ConnectedGuilds.TryGetValue(guildId, out var lvl_ewsce))
-                                await lvl_ewsce.InternalWebSocketClosedAsync(new WebSocketCloseEventArgs(jsonData["code"].ToObject<int>(), jsonData["reason"].ToString(), jsonData["byRemote"].ToObject<bool>())).ConfigureAwait(false);
+                            {
+                                var code = jsonData["code"].ToObject<int>();
+
+                                if (code == 4006 || code == 4009 || code == 4014)
+                                    this.ConnectedGuilds.TryRemove(guildId, out _);
+
+                                await lvl_ewsce.InternalWebSocketClosedAsync(new WebSocketCloseEventArgs(code, jsonData["reason"].ToString(), jsonData["byRemote"].ToObject<bool>())).ConfigureAwait(false);
+                            }
                             break;
                     }
                     break;
@@ -334,7 +359,7 @@ namespace DSharpPlus.Lavalink
         {
             if (this.IsConnected && e.CloseCode != 1001 && e.CloseCode != -1)
             {
-                this.Discord.DebugLogger.LogMessage(LogLevel.Warning, "Lavalink", "Connection broken; re-establishing...", DateTime.Now);
+                this.Discord.DebugLogger.LogMessage(LogLevel.Warning, "Lavalink", $"Connection broken ({e.CloseCode}, {e.CloseMessage}); re-establishing...", DateTime.Now);
                 this.WebSocket = this.Discord.Configuration.WebSocketClientFactory(this.Discord.Configuration.Proxy);
                 this.WebSocket.Connected += this.WebSocket_OnConnect;
                 this.WebSocket.Disconnected += this.WebSocket_OnDisconnect;
@@ -349,18 +374,17 @@ namespace DSharpPlus.Lavalink
             }
             else if (e.CloseCode != 1001 && e.CloseCode != -1)
             {
-                this.Discord.DebugLogger.LogMessage(LogLevel.Info, "Lavalink", "Connection closed", DateTime.Now);
-                if (this.NodeDisconnected != null)
-                    this.NodeDisconnected(this);
+                this.Discord.DebugLogger.LogMessage(LogLevel.Info, "Lavalink", $"Connection closed ({e.CloseCode}, {e.CloseMessage}).", DateTime.Now);
+                this.NodeDisconnected?.Invoke(this);
                 await this._disconnected.InvokeAsync(new NodeDisconnectedEventArgs(this)).ConfigureAwait(false);
             }
             else
             {
-                this.Discord.DebugLogger.LogMessage(LogLevel.Warning, "Lavalink", "Lavalink died", DateTime.Now);
+                Volatile.Write(ref this._isDisposed, true);
+                this.Discord.DebugLogger.LogMessage(LogLevel.Warning, "Lavalink", "Lavalink died.", DateTime.Now);
                 foreach (var kvp in this.ConnectedGuilds)
                     await kvp.Value.SendVoiceUpdateAsync().ConfigureAwait(false);
-                if (this.NodeDisconnected != null)
-                    this.NodeDisconnected(this);
+                this.NodeDisconnected?.Invoke(this);
                 await this._disconnected.InvokeAsync(new NodeDisconnectedEventArgs(this)).ConfigureAwait(false);
             }
         }
@@ -376,25 +400,29 @@ namespace DSharpPlus.Lavalink
         private void Con_ChannelDisconnected(LavalinkGuildConnection con)
             => this.ConnectedGuilds.TryRemove(con.GuildId, out _);
 
-        private Task Discord_VoiceStateUpdated(VoiceStateUpdateEventArgs e)
+        private async Task Discord_VoiceStateUpdated(VoiceStateUpdateEventArgs e)
         {
             var gld = e.Guild;
             if (gld == null)
-                return Task.CompletedTask;
+                return;
 
             if (e.User == null)
-                return Task.CompletedTask;
+                return;
 
-            if (e.User.Id == this.Discord.CurrentUser.Id && this.ConnectedGuilds.TryGetValue(e.Guild.Id, out var lvlgc))
-                lvlgc.VoiceStateUpdate = e;
-
-            if (!string.IsNullOrWhiteSpace(e.SessionId) && e.User.Id == this.Discord.CurrentUser.Id && e.Channel != null && this.VoiceStateUpdates.ContainsKey(gld.Id))
+            if(e.User.Id == this.Discord.CurrentUser.Id)
             {
-                this.VoiceStateUpdates.TryRemove(gld.Id, out var xe);
-                xe.SetResult(e);
-            }
+                if (e.After.Channel == null && this.ConnectedGuilds.TryRemove(gld.Id, out var gc) && this.IsConnected)
+                {
+                    gc.ManuallyDisconnected = true;
+                    await gc.DisconnectAsync().ConfigureAwait(false);
+                }
 
-            return Task.CompletedTask;
+                if (this.ConnectedGuilds.TryGetValue(e.Guild.Id, out var lvlgc))
+                    lvlgc.VoiceStateUpdate = e;
+
+                if (!string.IsNullOrWhiteSpace(e.SessionId) && e.Channel != null && this.VoiceStateUpdates.TryRemove(gld.Id, out var xe))
+                    xe.SetResult(e);
+            }
         }
 
         private async Task Discord_VoiceServerUpdated(VoiceServerUpdateEventArgs e)
@@ -409,11 +437,8 @@ namespace DSharpPlus.Lavalink
                 await this.WebSocket.SendMessageAsync(JsonConvert.SerializeObject(lvlp)).ConfigureAwait(false);
             }
 
-            if (this.VoiceServerUpdates.ContainsKey(gld.Id))
-            {
-                this.VoiceServerUpdates.TryRemove(gld.Id, out var xe);
+            if (this.VoiceServerUpdates.TryRemove(gld.Id, out var xe))
                 xe.SetResult(e);
-            }
         }
 
         internal event NodeDisconnectedEventHandler NodeDisconnected;

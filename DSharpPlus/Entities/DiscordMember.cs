@@ -143,7 +143,7 @@ namespace DSharpPlus.Entities
         public int Hierarchy
             => this.IsOwner ? int.MaxValue : this.RoleIds.Count == 0 ? 0 : this.Roles.Max(x => x.Position);
 
-        #region Overriden user properties
+        #region Overridden user properties
         [JsonIgnore]
         internal DiscordUser User 
             => this.Discord.UserCache[this.Id];
@@ -158,7 +158,7 @@ namespace DSharpPlus.Entities
         }
 
         /// <summary>
-        /// Gets the user's 4-digit discriminator.
+        /// Gets the member's 4-digit discriminator.
         /// </summary>
         public override string Discriminator
         {
@@ -167,7 +167,7 @@ namespace DSharpPlus.Entities
         }
 
         /// <summary>
-        /// Gets the user's avatar hash.
+        /// Gets the member's avatar hash.
         /// </summary>
         public override string AvatarHash
         {
@@ -176,7 +176,7 @@ namespace DSharpPlus.Entities
         }
 
         /// <summary>
-        /// Gets whether the user is a bot.
+        /// Gets whether the member is a bot.
         /// </summary>
         public override bool IsBot
         {
@@ -185,7 +185,8 @@ namespace DSharpPlus.Entities
         }
 
         /// <summary>
-        /// Gets the user's email address.
+        /// Gets the member's email address.
+        /// <para>This is only present in OAuth.</para>
         /// </summary>
         public override string Email
         {
@@ -194,7 +195,7 @@ namespace DSharpPlus.Entities
         }
 
         /// <summary>
-        /// Gets whether the user has multi-factor authentication enabled.
+        /// Gets whether the member has multi-factor authentication enabled.
         /// </summary>
         public override bool? MfaEnabled
         {
@@ -203,7 +204,8 @@ namespace DSharpPlus.Entities
         }
 
         /// <summary>
-        /// Gets whether the user is verified.
+        /// Gets whether the member is verified.
+        /// <para>This is only present in OAuth.</para>
         /// </summary>
         public override bool? Verified
         {
@@ -212,7 +214,7 @@ namespace DSharpPlus.Entities
         }
 
         /// <summary>
-        /// Gets the user's chosen language
+        /// Gets the member's chosen language
         /// </summary>
         public override string Locale
         {
@@ -221,12 +223,21 @@ namespace DSharpPlus.Entities
         }
 
         /// <summary>
-        /// Gets the user's premium type
+        /// Gets the user's flags.
         /// </summary>
-        public override PremiumType? PremiumType
-        {
-            get => this.User.PremiumType;
-            internal set => this.User.PremiumType = value;
+        public override UserFlags? OAuthFlags 
+        { 
+            get => this.User.OAuthFlags; 
+            internal set => this.User.OAuthFlags = value; 
+        }
+
+        /// <summary>
+        /// Gets the member's flags for OAuth.
+        /// </summary>
+        public override UserFlags? Flags 
+        { 
+            get => this.User.Flags; 
+            internal set => this.User.Flags = value; 
         }
         #endregion
 
