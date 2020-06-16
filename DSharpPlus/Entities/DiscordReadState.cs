@@ -5,7 +5,6 @@ namespace DSharpPlus.Entities
 {
     public class DiscordReadState : SnowflakeObject
     {
-        public static DiscordReadState Default { get; } = new DiscordReadState();
         private int _mentionCount;
         private ulong _lastMessageId;
         private DateTimeOffset _lastPinTimestamp;     
@@ -19,11 +18,14 @@ namespace DSharpPlus.Entities
                 if (Id == 0)
                     return false;
 
-                var channel = (Discord as DiscordClient).InternalGetCachedChannel(Id);
+                if (Discord == null || !(Discord is DiscordClient client))
+                    return false;
+
+                var channel = client.InternalGetCachedChannel(Id);
                 if (channel == null)
                     return false;
 
-                if (channel.Type == ChannelType.Text || channel.Type == ChannelType.Private || channel.Type == ChannelType.Group || channel.Type == ChannelType.News)
+                if (channel.Type != ChannelType.Voice && channel.Type != ChannelType.Category && channel.Type != ChannelType.Store)
                 {
                     if (channel.Muted)
                         return false;
@@ -33,7 +35,7 @@ namespace DSharpPlus.Entities
                         return MentionCount > 0;
                     }
 
-                    return (MentionCount > 0 || (channel.LastMessageId != 0 ? channel.LastMessageId > _lastMessageId : false));
+                    return (MentionCount > 0 || (channel.LastMessageId != 0 && channel.LastMessageId > _lastMessageId));
                 }
                 else
                 {

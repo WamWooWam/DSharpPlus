@@ -84,6 +84,16 @@ namespace DSharpPlus.Entities
             return name;
         }
 
+        public string GetSearchName()
+        {
+            DiscordNameLookup.TryGetValue(this.Name, out var name);
+
+            if (name == null)
+                return this.Name;
+
+            return name;
+        }
+
         /// <summary>
         /// Returns a string representation of this emoji.
         /// </summary>

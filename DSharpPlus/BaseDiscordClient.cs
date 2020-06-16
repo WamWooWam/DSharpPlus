@@ -15,7 +15,7 @@ namespace DSharpPlus
     public abstract class BaseDiscordClient : NotifyPropertyChangeImpl, IDisposable
     {
         public DiscordApiClient ApiClient { get; }
-        public DiscordConfiguration Configuration { get; }
+        internal protected DiscordConfiguration Configuration { get; }
         internal protected ConcurrentDictionary<ulong, DiscordReadState> ReadStates { get; } = new ConcurrentDictionary<ulong, DiscordReadState>();
 
         /// <summary>
@@ -77,6 +77,8 @@ namespace DSharpPlus
         /// </summary>
         protected internal ConcurrentDictionary<string, DiscordVoiceRegion> InternalVoiceRegions { get; set; }
 
+        public DiscordReadState DefaultReadState { get; } 
+
         /// <summary>
         /// Initializes this Discord API client.
         /// </summary>
@@ -88,6 +90,7 @@ namespace DSharpPlus
             this.DebugLogger = new DebugLogger(this);
             this.UserCache = new ConcurrentDictionary<ulong, DiscordUser>();
             this.InternalVoiceRegions = new ConcurrentDictionary<string, DiscordVoiceRegion>();
+            this.DefaultReadState = new DiscordReadState() { Discord = this };
         }
 
         /// <summary>

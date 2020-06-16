@@ -65,6 +65,7 @@ namespace DSharpPlus.Net
                 : throw new UriFormatException(
                     $@"DiscordUri ""{this._value}"" would be invalid as a regular URI, please the {nameof(this.Type)} property first.");
 
+
         internal sealed class DiscordUriJsonConverter : JsonConverter
         {
             public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)

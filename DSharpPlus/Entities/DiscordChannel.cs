@@ -13,7 +13,7 @@ namespace DSharpPlus.Entities
     /// <summary>
     /// Represents a discord channel.
     /// </summary>
-    public class DiscordChannel : SnowflakeObject, IEquatable<DiscordChannel>
+    public class DiscordChannel : SnowflakeObject, IEquatable<DiscordChannel>, IComparable<DiscordChannel>
     {
         private string _name;
         private int _position;
@@ -174,13 +174,18 @@ namespace DSharpPlus.Entities
         public bool Muted { get; set; }
 
         [JsonIgnore]
-        public DiscordReadState ReadState => Discord.ReadStates.TryGetValue(Id, out var state) ? state : DiscordReadState.Default;
+        public DiscordReadState ReadState =>
+            Discord.ReadStates.TryGetValue(Id, out var state) ? state : Discord.DefaultReadState;
 
         [JsonIgnore]
         public IEnumerable<DiscordUser> ConnectedUsers => Type == ChannelType.Voice ? Users : null;
 
         [JsonIgnore]
         public int UserCount => ConnectedUsers?.Count() ?? 0;
+
+        [JsonIgnore]
+        public Permissions CurrentPermissions => IsPrivate ? Permissions.Administrator : PermissionsFor(Guild.CurrentMember);
+
 
         internal DiscordChannel()
         {
@@ -678,6 +683,8 @@ namespace DSharpPlus.Entities
             return $"Channel {this.Id}";
         }
         #endregion
+
+        public int CompareTo(DiscordChannel other) => Position.CompareTo(other?.Position ?? 0);
 
         /// <summary>
         /// Checks whether this <see cref="DiscordChannel"/> is equal to another object.
