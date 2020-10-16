@@ -52,6 +52,9 @@ namespace DSharpPlus.Entities
         [JsonProperty("guild_positions")]
         public IList<ulong> GuildPositions { get; set; }
 
+        [JsonProperty("guild_folders")]
+        public IList<DiscordGuildFolder> GuildFolders { get; set; }
+
         [JsonProperty("gif_auto_play")]
         public bool GifAutoPlay { get; set; }
 

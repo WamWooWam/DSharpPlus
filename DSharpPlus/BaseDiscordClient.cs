@@ -64,7 +64,7 @@ namespace DSharpPlus
         /// <summary>
         /// Gets the cached users for this client.
         /// </summary>
-        protected internal ConcurrentDictionary<ulong, DiscordUser> UserCache { get; }
+        public ConcurrentDictionary<ulong, DiscordUser> UserCache { get; }
 
         /// <summary>
         /// Gets the list of available voice regions. Note that this property will not contain VIP voice regions.

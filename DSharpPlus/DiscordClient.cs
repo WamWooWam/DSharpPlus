@@ -1895,7 +1895,7 @@ namespace DSharpPlus
             foreach (var xr in message._reactions)
                 xr.Emoji.Discord = this;
 
-            if (message.Channel.ReadState != null)
+            if (message.Channel?.ReadState != null)
             {
                 if (author.Id != CurrentUser.Id)
                 {
