@@ -77,7 +77,8 @@ namespace DSharpPlus
         /// </summary>
         protected internal ConcurrentDictionary<string, DiscordVoiceRegion> InternalVoiceRegions { get; set; }
 
-        public DiscordReadState DefaultReadState { get; } 
+        public DiscordReadState DefaultReadState { get; }
+        public bool IsDisposed { get; internal set; } = false;
 
         /// <summary>
         /// Initializes this Discord API client.

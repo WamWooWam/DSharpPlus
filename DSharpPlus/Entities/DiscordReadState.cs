@@ -18,7 +18,7 @@ namespace DSharpPlus.Entities
                 if (Id == 0)
                     return false;
 
-                if (Discord == null || !(Discord is DiscordClient client))
+                if (Discord == null || !(Discord is DiscordClient client) || Discord.IsDisposed)
                     return false;
 
                 var channel = client.InternalGetCachedChannel(Id);

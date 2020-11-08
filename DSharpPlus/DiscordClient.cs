@@ -195,6 +195,7 @@ namespace DSharpPlus
 
             this._relationshipAdded = new AsyncEvent<RelationshipEventArgs>(EventErrorHandler, "RELATIONSHIP_ADD");
             this._relationshipRemoved = new AsyncEvent<RelationshipEventArgs>(EventErrorHandler, "RElATIONSHIP_REMOVE");
+            this._loggedOut = new AsyncEvent(EventErrorHandler, "LOGGED_OUT");
 
             this._guilds.Clear();
             this._presences.Clear();
@@ -519,6 +520,7 @@ namespace DSharpPlus
         /// <returns></returns>
         public async Task DisconnectAsync()
         {
+            await _loggedOut.InvokeAsync();
             this.Configuration.AutoReconnect = false;
             if (this._webSocketClient != null)
                 await this._webSocketClient.DisconnectAsync().ConfigureAwait(false);
@@ -2821,16 +2823,15 @@ namespace DSharpPlus
             this.Dispose();
         }
 
-        private bool _disposed;
         /// <summary>
         /// Disposes your DiscordClient.
         /// </summary>
         public override void Dispose()
         {
-            if (_disposed)
+            if (IsDisposed)
                 return;
 
-            this._disposed = true;
+            this.IsDisposed = true;
             GC.SuppressFinalize(this);
 
             this.DisconnectAsync().ConfigureAwait(false).GetAwaiter().GetResult();
@@ -3394,6 +3395,16 @@ namespace DSharpPlus
             remove { _relationshipRemoved.Unregister(value); }
         }
         private AsyncEvent<RelationshipEventArgs> _relationshipRemoved;
+
+        /// <summary>
+        /// Fired when you log out
+        /// </summary>
+        public event AsyncEventHandler LoggedOut
+        {
+            add { _loggedOut.Register(value); }
+            remove { _loggedOut.Unregister(value); }
+        }
+        private AsyncEvent _loggedOut;
 
 
         internal void EventErrorHandler(string evname, Exception ex)

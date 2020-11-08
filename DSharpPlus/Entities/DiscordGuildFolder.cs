@@ -14,7 +14,7 @@ namespace DSharpPlus.Entities
         public string Name { get; private set; }
 
         [JsonProperty("id")]
-        public ulong? Id { get; private set; }
+        public long? Id { get; private set; }
 
         [JsonProperty("guild_ids")]
         private List<ulong> _guildIds;

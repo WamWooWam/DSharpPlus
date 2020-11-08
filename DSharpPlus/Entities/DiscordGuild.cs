@@ -374,7 +374,7 @@ namespace DSharpPlus.Entities
         /// </summary>
         [JsonIgnore]
         public string BannerUrl
-            => !string.IsNullOrWhiteSpace(this.Banner) ? $"https://cdn.discordapp.com/banners/{this.Id}/{this.Banner}" : null;
+            => !string.IsNullOrWhiteSpace(this.Banner) ? $"https://cdn.discordapp.com/banners/{this.Id}/{this.Banner}?size=512" : null;
 
         /// <summary>
         /// Gets this guild's premium tier (Nitro boosting).

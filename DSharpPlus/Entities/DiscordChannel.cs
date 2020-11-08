@@ -598,6 +598,20 @@ namespace DSharpPlus.Entities
         }
 
         /// <summary>
+        /// Acknowledges the message. This is available to user tokens only.
+        /// </summary>
+        /// <returns></returns>
+        public Task AcknowledgeAsync(ulong message_id)
+        {
+            if (Discord.Configuration.TokenType == TokenType.User)
+            {
+                return Discord.ApiClient.AcknowledgeMessageAsync(message_id, Id);
+            }
+
+            throw new InvalidOperationException("ACK can only be used when logged in as regular user.");
+        }
+
+        /// <summary>
         /// Calculates permissions for a given member.
         /// </summary>
         /// <param name="mbr">Member to calculate permissions for.</param>
