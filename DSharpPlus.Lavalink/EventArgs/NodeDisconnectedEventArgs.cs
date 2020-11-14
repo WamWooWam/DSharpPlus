@@ -1,4 +1,6 @@
-﻿namespace DSharpPlus.Lavalink.EventArgs
+﻿using Emzi0767.Utilities;
+
+namespace DSharpPlus.Lavalink.EventArgs
 {
     /// <summary>
     /// Represents event arguments for Lavalink node disconnection.
@@ -10,9 +12,15 @@
         /// </summary>
         public LavalinkNodeConnection LavalinkNode { get; }
 
-        internal NodeDisconnectedEventArgs(LavalinkNodeConnection node)
+        /// <summary>
+        /// Gets whether disconnect was clean.
+        /// </summary>
+        public bool IsCleanClose { get; }
+
+        internal NodeDisconnectedEventArgs(LavalinkNodeConnection node, bool isClean)
         {
             this.LavalinkNode = node;
+            this.IsCleanClose = isClean;
         }
     }
 }

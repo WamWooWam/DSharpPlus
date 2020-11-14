@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Threading.Tasks;
+using ConcurrentCollections;
 using DSharpPlus.Entities;
 using DSharpPlus.EventArgs;
-using DSharpPlus.Interactivity.Concurrency;
 using Microsoft.Extensions.Logging;
 
 namespace DSharpPlus.Interactivity.EventHandling
@@ -46,7 +46,7 @@ namespace DSharpPlus.Interactivity.EventHandling
             }
         }
 
-        async Task HandleReactionAdd(MessageReactionAddEventArgs eventargs)
+        async Task HandleReactionAdd(DiscordClient client, MessageReactionAddEventArgs eventargs)
         {
             await Task.Yield();
             foreach (var req in _requests)
@@ -76,7 +76,7 @@ namespace DSharpPlus.Interactivity.EventHandling
             }
         }
 
-        async Task HandleReactionRemove(MessageReactionRemoveEventArgs eventargs)
+        async Task HandleReactionRemove(DiscordClient client, MessageReactionRemoveEventArgs eventargs)
         {
             await Task.Yield();
             foreach (var req in _requests)
@@ -103,7 +103,7 @@ namespace DSharpPlus.Interactivity.EventHandling
             }
         }
 
-        async Task HandleReactionClear(MessageReactionsClearEventArgs eventargs)
+        async Task HandleReactionClear(DiscordClient client, MessageReactionsClearEventArgs eventargs)
         {
             await Task.Yield();
             foreach (var req in _requests)

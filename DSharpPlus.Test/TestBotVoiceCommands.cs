@@ -23,7 +23,7 @@ namespace DSharpPlus.Test
 
         private ConcurrentDictionary<uint, ulong> _ssrcMap;
         private ConcurrentDictionary<uint, FileStream> _ssrcFilemap;
-        private async Task OnVoiceReceived(VoiceReceiveEventArgs e)
+        private async Task OnVoiceReceived(VoiceNextConnection vnc, VoiceReceiveEventArgs e)
         {
             if (!this._ssrcFilemap.ContainsKey(e.SSRC))
                 this._ssrcFilemap[e.SSRC] = File.Create($"{e.SSRC} ({e.AudioFormat.ChannelCount}).pcm");
@@ -34,7 +34,7 @@ namespace DSharpPlus.Test
             await fs.WriteAsync(buff, 0, buff.Length).ConfigureAwait(false);
             // await fs.FlushAsync().ConfigureAwait(false);
         }
-        private Task OnUserSpeaking(UserSpeakingEventArgs e)
+        private Task OnUserSpeaking(VoiceNextConnection vnc, UserSpeakingEventArgs e)
         {
             if (this._ssrcMap.ContainsKey(e.SSRC))
                 return Task.CompletedTask;
@@ -45,12 +45,12 @@ namespace DSharpPlus.Test
             this._ssrcMap[e.SSRC] = e.User.Id;
             return Task.CompletedTask;
         }
-        private Task OnUserJoined(VoiceUserJoinEventArgs e)
+        private Task OnUserJoined(VoiceNextConnection vnc, VoiceUserJoinEventArgs e)
         {
             this._ssrcMap.TryAdd(e.SSRC, e.User.Id);
             return Task.CompletedTask;
         }
-        private Task OnUserLeft(VoiceUserLeaveEventArgs e)
+        private Task OnUserLeft(VoiceNextConnection vnc, VoiceUserLeaveEventArgs e)
         {
             if (this._ssrcFilemap.TryRemove(e.SSRC, out var pcmFs))
                 pcmFs.Dispose();
@@ -78,7 +78,7 @@ namespace DSharpPlus.Test
                 return;
             }
 
-            var transmitStream = vnc.GetTransmitStream();
+            var transmitStream = vnc.GetTransmitSink();
             transmitStream.VolumeModifier = vol;
 
             await ctx.RespondAsync($"Volume set to {(vol * 100).ToString("0.00")}%").ConfigureAwait(false);
@@ -183,15 +183,14 @@ namespace DSharpPlus.Test
                 var ffmpeg_inf = new ProcessStartInfo
                 {
                     FileName = "ffmpeg",
-                    Arguments = $"-i \"{snd}\" -ac 2 -f s16le -ar 48000 pipe:1",
+                    Arguments = $"-i \"{snd}\" -ac 2 -f s16le -ar 48000 -",
                     UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true
+                    RedirectStandardOutput = true
                 };
                 var ffmpeg = Process.Start(ffmpeg_inf);
                 var ffout = ffmpeg.StandardOutput.BaseStream;
 
-                var transmitStream = vnc.GetTransmitStream();
+                var transmitStream = vnc.GetTransmitSink();
                 await ffout.CopyToAsync(transmitStream).ConfigureAwait(false);
                 await transmitStream.FlushAsync().ConfigureAwait(false);
 
@@ -255,7 +254,7 @@ namespace DSharpPlus.Test
                     var ffmpeg = Process.Start(ffmpeg_inf);
                     var ffout = ffmpeg.StandardOutput.BaseStream;
                     
-                    var transmitStream = vnc.GetTransmitStream();
+                    var transmitStream = vnc.GetTransmitSink();
                     await ffout.CopyToAsync(transmitStream).ConfigureAwait(false);
                     await transmitStream.FlushAsync().ConfigureAwait(false);
 
@@ -338,7 +337,7 @@ namespace DSharpPlus.Test
                 var ffmpeg = Process.Start(ffmpeg_inf);
                 var ffout = ffmpeg.StandardOutput.BaseStream;
                 
-                var transmitStream = vnc.GetTransmitStream();
+                var transmitStream = vnc.GetTransmitSink();
                 await ffout.CopyToAsync(transmitStream).ConfigureAwait(false);
                 await transmitStream.FlushAsync().ConfigureAwait(false);
 

@@ -6,6 +6,7 @@ using System.IO;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System;
+using DSharpPlus.Exceptions;
 using DSharpPlus.Net.Models;
 
 namespace DSharpPlus
@@ -272,6 +273,33 @@ namespace DSharpPlus
             };
             return this.ApiClient.ModifyGuildChannelPositionAsync(guild_id, rgcrps, reason);
         }
+
+        /// <summary>
+        /// Gets a guild's widget
+        /// </summary>
+        /// <param name="guild_id">Guild id</param>
+        /// <returns></returns>
+        public Task<DiscordWidget> GetGuildWidgetAsync(ulong guild_id)
+            => this.ApiClient.GetGuildWidgetAsync(guild_id);
+
+        /// <summary>
+        /// Gets a guild's widget settings
+        /// </summary>
+        /// <param name="guild_id">Guild id</param>
+        /// <returns></returns>
+        public Task<DiscordWidgetSettings> GetGuildWidgetSettingsAsync(ulong guild_id)
+            => this.ApiClient.GetGuildWidgetSettingsAsync(guild_id);
+
+        /// <summary>
+        /// Modifies a guild's widget settings
+        /// </summary>
+        /// <param name="guild_id">Guild id</param>
+        /// <param name="enabled">If the widget is enabled or not</param>
+        /// <param name="channel_id">Widget channel id</param>
+        /// <param name="reason">Reason the widget settings were modified</param>
+        /// <returns></returns>
+        public Task<DiscordWidgetSettings> ModifyGuildWidgetSettingsAsync(ulong guild_id, bool? enabled = null, ulong? channel_id = null, string reason = null)
+            => this.ApiClient.ModifyGuildWidgetSettingsAsync(guild_id, enabled, channel_id, reason);
         #endregion
 
         #region Channel
@@ -591,6 +619,27 @@ namespace DSharpPlus
         /// <returns></returns>
         public Task<DiscordDmChannel> CreateDmAsync(ulong recipient_id)
             => this.ApiClient.CreateDmAsync(recipient_id);
+
+        /// <summary>
+        /// Follows a news channel
+        /// </summary>
+        /// <param name="channel_id">Id of the channel to follow</param>
+        /// <param name="webhook_channel_id">Id of the channel to crosspost messages to</param>
+        /// <exception cref="UnauthorizedException">Thrown when the current user doesn't have <see cref="Permissions.ManageWebhooks"/> on the target channel</exception>
+        public Task<DiscordFollowedChannel> FollowChannelAsync(ulong channel_id, ulong webhook_channel_id)
+            => this.ApiClient.FollowChannelAsync(channel_id, webhook_channel_id);
+
+        /// <summary>
+        /// Publishes a message in a news channel to following channels
+        /// </summary>
+        /// <param name="channel_id">Id of the news channel the message to crosspost belongs to</param>
+        /// <param name="message_id">Id of the message to crosspost</param>
+        /// <exception cref="UnauthorizedException">
+        ///     Thrown when the current user doesn't have <see cref="Permissions.ManageWebhooks"/> and/or <see cref="Permissions.SendMessages"/> 
+        /// </exception>
+        public Task<DiscordMessage> CrosspostMessageAsync(ulong channel_id, ulong message_id)
+            => this.ApiClient.CrosspostMessageAsync(channel_id, message_id);
+        
         #endregion
 
         #region Member
@@ -1174,6 +1223,7 @@ namespace DSharpPlus
                 return;
             disposed = true;
             _guilds = null;
+            this.ApiClient.Rest.Dispose();
         }
     }
 }

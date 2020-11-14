@@ -47,5 +47,9 @@
         public const string VANITY_URL = "/vanity-url";
         public const string WIDGET_PNG = "/widget.png";
         public const string PREVIEW = "/preview";
+        public const string FOLLOWERS = "/followers";
+        public const string CROSSPOST = "/crosspost";
+        public const string WIDGET = "/widget";
+        public const string WIDGET_JSON = "/widget.json";
     }
 }

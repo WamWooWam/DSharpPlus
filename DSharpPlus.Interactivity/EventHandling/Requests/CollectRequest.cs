@@ -1,16 +1,14 @@
-﻿using DSharpPlus.Interactivity.Concurrency;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using ConcurrentCollections;
+using Emzi0767.Utilities;
 
 namespace DSharpPlus.Interactivity.EventHandling
 {
     /// <summary>
     /// CollectRequest is a class that serves as a representation of
-    /// EventArgs that are being collected within a specific timeframe.
+    /// EventArgs that are being collected within a specific time frame.
     /// </summary>
     /// <typeparam name="T"></typeparam>
     internal class CollectRequest<T> : IDisposable where T : AsyncEventArgs
