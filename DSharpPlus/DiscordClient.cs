@@ -1961,6 +1961,8 @@ namespace DSharpPlus
             message._mentionedRoles = mentioned_roles;
             message._mentionedChannels = mentioned_channels;
 
+            message.InvokePropertyChanged("");
+
             var ea = new MessageUpdateEventArgs(this)
             {
                 Message = message,
