@@ -126,7 +126,7 @@ namespace DSharpPlus.Entities
         /// <returns>Whether the <see cref="DiscordWebhook"/> is equal to this <see cref="DiscordWebhook"/>.</returns>
         public bool Equals(DiscordWebhook e)
         {
-            if (ReferenceEquals(e, null))
+            if (e is null)
                 return false;
 
             if (ReferenceEquals(this, e))

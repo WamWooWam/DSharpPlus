@@ -48,7 +48,7 @@ namespace DSharpPlus.Net
             return !post ? $"?{vals}" : vals;
         }
 
-        private DiscordMessage PrepareMessage(JToken msg_raw)
+        internal DiscordMessage PrepareMessage(JToken msg_raw)
         {
             var author = msg_raw["author"].ToObject<TransportUser>();
             var ret = msg_raw.ToDiscordObject<DiscordMessage>();
@@ -99,10 +99,24 @@ namespace DSharpPlus.Net
 
             if (ret._embeds == null)
                 ret._embeds = new List<DiscordEmbed>();
+
             foreach (var xe in ret._embeds)
                 xe.Owner = ret;
 
+            if (ret.ReferencedMessage != null)
+            {
+                var referencedMessage = ret.ReferencedMessage;
+                referencedMessage.Discord = this.Discord;
 
+                if (this.Discord is DiscordClient client && client.MessageCache.TryGet((m) => m.Id == referencedMessage.Id, out var discordMessage))
+                {
+                    ret.ReferencedMessage = discordMessage;
+                }
+                else
+                {
+                    ret.ReferencedMessage = this.PrepareMessage(msg_raw["referenced_message"]);
+                }
+            }
 
             return ret;
         }
@@ -528,7 +542,7 @@ namespace DSharpPlus.Net
             return ret;
         }
 
-        internal async Task<DiscordMessage> CreateMessageAsync(ulong channel_id, string content, bool? tts, DiscordEmbed embed, IEnumerable<IMention> mentions)
+        internal async Task<DiscordMessage> CreateMessageAsync(ulong channel_id, string content, bool? tts, DiscordEmbed embed, IEnumerable<IMention> mentions, ulong? reply_message_id)
         {
             if (content != null && content.Length > 2000)
                 throw new ArgumentException("Message content length cannot exceed 2000 characters.");
@@ -545,17 +559,18 @@ namespace DSharpPlus.Net
             if (embed?.Timestamp != null)
                 embed.Timestamp = embed.Timestamp.Value.ToUniversalTime();
 
-            var pld = new RestChannelMessageCreatePayload
+            var pld = new RestChannelMessageCreateMultipartPayload
             {
-                HasContent = content != null,
                 Content = content,
                 IsTTS = tts,
-                HasEmbed = embed != null,
                 Embed = embed
             };
 
             if (mentions != null)
                 pld.Mentions = new DiscordMentions(mentions);
+
+            if (reply_message_id != null)
+                pld.MessageReference = new InternalDiscordMessageReference() { messageId = reply_message_id };
 
             var route = $"{Endpoints.CHANNELS}/:channel_id{Endpoints.MESSAGES}";
             var bucket = this.Rest.GetBucket(RestRequestMethod.POST, route, new { channel_id }, out var path);
@@ -1077,7 +1092,7 @@ namespace DSharpPlus.Net
 
             var url = Utilities.GetApiUriBuilderFor(path)
                 .AddParameter($"limit", limit.ToString(CultureInfo.InvariantCulture));
-            
+
             if (before != null)
                 url.AddParameter("before", before.Value.ToString(CultureInfo.InvariantCulture));
             if (after != null)

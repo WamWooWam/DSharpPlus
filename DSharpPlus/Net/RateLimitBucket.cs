@@ -133,7 +133,7 @@ namespace DSharpPlus.Net
         /// <returns>Whether the <see cref="RateLimitBucket"/> is equal to this <see cref="RateLimitBucket"/>.</returns>
         public bool Equals(RateLimitBucket e)
         {
-            if (ReferenceEquals(e, null))
+            if (e is null)
                 return false;
 
             if (ReferenceEquals(this, e))

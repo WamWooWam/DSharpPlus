@@ -89,6 +89,9 @@ namespace DSharpPlus.Net.Abstractions
         public bool? IsTTS { get; set; }
         [JsonProperty("allowed_mentions", NullValueHandling = NullValueHandling.Ignore)]
         public DiscordMentions Mentions { get; set; }
+
+        [JsonProperty("message_reference", NullValueHandling = NullValueHandling.Ignore)]
+        public InternalDiscordMessageReference? MessageReference { get; set; }
     }
 
     internal sealed class RestChannelMessageCreateMultipartPayload
@@ -104,6 +107,9 @@ namespace DSharpPlus.Net.Abstractions
 
         [JsonProperty("allowed_mentions", NullValueHandling = NullValueHandling.Ignore)]
         public DiscordMentions Mentions { get; set; }
+
+        [JsonProperty("message_reference", NullValueHandling = NullValueHandling.Ignore)]
+        public InternalDiscordMessageReference? MessageReference { get; set; }
     }
 
     internal sealed class RestChannelMessageBulkDeletePayload

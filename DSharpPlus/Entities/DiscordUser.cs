@@ -55,7 +55,7 @@ namespace DSharpPlus.Entities
 
         [JsonIgnore]
         internal int DiscriminatorInt
-            => int.Parse(this.Discriminator, NumberStyles.Integer, CultureInfo.InvariantCulture);
+            => !string.IsNullOrEmpty(this.Discriminator) ? int.Parse(this.Discriminator, NumberStyles.Integer, CultureInfo.InvariantCulture) : 0;
 
         /// <summary>
         /// Gets the user's avatar hash.
@@ -273,7 +273,7 @@ namespace DSharpPlus.Entities
         /// <returns>Whether the <see cref="DiscordUser"/> is equal to this <see cref="DiscordUser"/>.</returns>
         public bool Equals(DiscordUser e)
         {
-            if (ReferenceEquals(e, null))
+            if (e is null)
                 return false;
 
             if (ReferenceEquals(this, e))

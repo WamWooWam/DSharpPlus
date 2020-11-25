@@ -251,7 +251,7 @@ namespace DSharpPlus
         {
             var rgrrps = new List<RestGuildRoleReorderPayload>()
             {
-                new RestGuildRoleReorderPayload { RoleId = role_id }
+                new RestGuildRoleReorderPayload { RoleId = role_id, Position = position }
             };
             return this.ApiClient.ModifyGuildRolePositionAsync(guild_id, rgrrps, reason);
         }
@@ -366,8 +366,8 @@ namespace DSharpPlus
         /// <param name="embed">Embed to attach</param>
         /// <param name="mentions">Allowed mentions in the message</param>
         /// <returns></returns>
-        public Task<DiscordMessage> CreateMessageAsync(ulong channel_id, string content, bool? tts, DiscordEmbed embed, IEnumerable<IMention> mentions)
-            => ApiClient.CreateMessageAsync(channel_id, content, tts, embed, mentions);
+        public Task<DiscordMessage> CreateMessageAsync(ulong channel_id, string content, bool? tts, DiscordEmbed embed, IEnumerable<IMention> mentions, ulong? reply_message_id)
+            => ApiClient.CreateMessageAsync(channel_id, content, tts, embed, mentions, reply_message_id);
 
         /// <summary>
         /// Uploads a file

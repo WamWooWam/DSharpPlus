@@ -68,6 +68,21 @@
         /// <summary>
         /// Message when a user follows a news channel.
         /// </summary>
-        ChannelFollowAdd = 12
+        ChannelFollowAdd = 12,
+
+        /// <summary>
+        /// 
+        /// </summary>
+        GuildDiscoveryDisqualified = 14,
+
+        /// <summary>
+        /// 
+        /// </summary>
+        GuildDiscoveryRequalified = 15,
+
+        /// <summary>
+        /// Message when a user replies to another message
+        /// </summary>
+        Reply = 19
     }
 }

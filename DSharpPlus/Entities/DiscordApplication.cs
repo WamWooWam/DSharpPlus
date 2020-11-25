@@ -165,7 +165,7 @@ namespace DSharpPlus.Entities
         /// <returns>Whether the <see cref="DiscordApplication"/> is equal to this <see cref="DiscordApplication"/>.</returns>
         public bool Equals(DiscordApplication e)
         {
-            if (ReferenceEquals(e, null))
+            if (e is null)
                 return false;
 
             if (ReferenceEquals(this, e))
@@ -283,7 +283,7 @@ namespace DSharpPlus.Entities
         /// <returns>Whether the <see cref="DiscordApplicationAsset"/> is equal to this <see cref="DiscordApplicationAsset"/>.</returns>
         public bool Equals(DiscordApplicationAsset e)
         {
-            if (ReferenceEquals(e, null))
+            if (e is null)
                 return false;
 
             if (ReferenceEquals(this, e))

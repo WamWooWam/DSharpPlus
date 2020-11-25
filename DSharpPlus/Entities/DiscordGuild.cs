@@ -128,24 +128,6 @@ namespace DSharpPlus.Entities
         [JsonProperty("afk_timeout", NullValueHandling = NullValueHandling.Ignore)]
         public int AfkTimeout { get; internal set; }
 
-        /// <summary>
-        /// Gets whether this guild has the guild embed enabled.
-        /// </summary>
-        [JsonProperty("embed_enabled", NullValueHandling = NullValueHandling.Ignore)]
-        public bool EmbedEnabled { get; internal set; }
-
-        /// <summary>
-        /// Gets the ID of the channel from the guild's embed.
-        /// </summary>
-        [JsonProperty("embed_channel_id", NullValueHandling = NullValueHandling.Ignore)]
-        internal ulong EmbedChannelId { get; set; }
-
-        /// <summary>
-        /// Gets the channel from the guild's embed.
-        /// </summary>
-        [JsonIgnore]
-        public DiscordChannel EmbedChannel
-            => this.GetChannel(this.EmbedChannelId);
 
         /// <summary>
         /// Gets the guild's verification level.
@@ -1860,7 +1842,7 @@ namespace DSharpPlus.Entities
         /// <returns>Whether the <see cref="DiscordGuild"/> is equal to this <see cref="DiscordGuild"/>.</returns>
         public bool Equals(DiscordGuild e)
         {
-            if (ReferenceEquals(e, null))
+            if (e is null)
                 return false;
 
             if (ReferenceEquals(this, e))

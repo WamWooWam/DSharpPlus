@@ -25,6 +25,9 @@ namespace DSharpPlus.Entities
         {
             this.Discord = user.Discord;
             this.Id = user.Id;
+
+            if (!this.Discord.UserCache.ContainsKey(user.Id))
+                this.Discord.UserCache[user.Id] = user;
         }
 
         internal DiscordMember(TransportMember mbr) : this()
@@ -81,7 +84,7 @@ namespace DSharpPlus.Entities
         {
             get
             {
-                var role = this.Roles.OrderByDescending(xr => xr.Position).FirstOrDefault(xr => xr.Color.Value != 0);
+                var role = this.Roles.OrderByDescending(xr => xr.Position).FirstOrDefault(xr => xr != null && xr.Color.Value != 0);
                 if (role != null)
                     return role.Color;
                 return default;
@@ -511,7 +514,7 @@ namespace DSharpPlus.Entities
         /// <returns>Whether the <see cref="DiscordMember"/> is equal to this <see cref="DiscordMember"/>.</returns>
         public bool Equals(DiscordMember e)
         {
-            if (ReferenceEquals(e, null))
+            if (e is null)
                 return false;
 
             if (ReferenceEquals(this, e))

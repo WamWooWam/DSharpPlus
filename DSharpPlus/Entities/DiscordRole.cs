@@ -160,7 +160,7 @@ namespace DSharpPlus.Entities
         /// <returns>Whether the <see cref="DiscordRole"/> is equal to this <see cref="DiscordRole"/>.</returns>
         public bool Equals(DiscordRole e)
         {
-            if (ReferenceEquals(e, null))
+            if (e is null)
                 return false;
 
             if (ReferenceEquals(this, e))

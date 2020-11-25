@@ -32,6 +32,8 @@ namespace DSharpPlus.Entities
         internal List<DiscordAttachment> _attachments = new List<DiscordAttachment>();
         [JsonProperty("embeds", NullValueHandling = NullValueHandling.Ignore)]
         internal List<DiscordEmbed> _embeds = new List<DiscordEmbed>();
+        [JsonProperty("stickers", NullValueHandling = NullValueHandling.Ignore)]
+        internal List<DiscordSticker> _stickers = new List<DiscordSticker>();
 
         public DiscordMessage()
         {
@@ -234,6 +236,19 @@ namespace DSharpPlus.Entities
         public MessageFlags? Flags { get; internal set; }
 
         /// <summary>
+        /// Gets the message this message is a response to. Only applies if <see cref="MessageType"/> == <see cref="MessageType.Reply"/>
+        /// </summary>
+        [JsonProperty("referenced_message", NullValueHandling = NullValueHandling.Ignore)]
+        public DiscordMessage ReferencedMessage { get; internal set; }
+
+        /// <summary>
+        /// Gets reactions used on this message.
+        /// </summary>
+        [JsonIgnore]
+        public IReadOnlyList<DiscordSticker> Stickers
+            => this._stickers;
+
+        /// <summary>
         /// Gets whether the message originated from a webhook.
         /// </summary>
         [JsonIgnore]
@@ -275,21 +290,23 @@ namespace DSharpPlus.Entities
                     Discord = client
                 };
 
-            var channel = client.InternalGetCachedChannel(channelId);
-
-            if (channel == null)
+            if (channelId.HasValue)
             {
-                reference.Channel = new DiscordChannel
+                var channel = client.InternalGetCachedChannel(channelId.Value);
+
+                if (channel == null)
                 {
-                    Id = channelId,
-                    Discord = client
-                };
+                    reference.Channel = new DiscordChannel
+                    {
+                        Id = channelId.Value,
+                        Discord = client
+                    };
 
-                if (guildId.HasValue)
-                    reference.Channel.GuildId = guildId.Value;
+                    if (guildId.HasValue)
+                        reference.Channel.GuildId = guildId.Value;
+                }
+                else reference.Channel = channel;
             }
-
-            else reference.Channel = channel;
 
             if (client.MessageCache.TryGet(m => m.Id == messageId.Value && m.ChannelId == channelId, out var msg))
                 reference.Message = msg;
@@ -355,8 +372,8 @@ namespace DSharpPlus.Entities
         /// <param name="embed">Embed to attach to the message.</param>
         /// <param name="mentions">Allowed mentions in the message</param>
         /// <returns>The sent message.</returns>
-        public Task<DiscordMessage> RespondAsync(string content = null, bool tts = false, DiscordEmbed embed = null, IEnumerable<IMention> mentions = null) 
-            => this.Discord.ApiClient.CreateMessageAsync(this.ChannelId, content, tts, embed, mentions);
+        public Task<DiscordMessage> RespondAsync(string content = null, bool tts = false, DiscordEmbed embed = null, IEnumerable<IMention> mentions = null, DiscordMessage replyTo = null) 
+            => this.Discord.ApiClient.CreateMessageAsync(this.ChannelId, content, tts, embed, mentions, replyTo.Id);
 
         /// <summary>
         /// Responds to the message with a file.
@@ -535,7 +552,7 @@ namespace DSharpPlus.Entities
         /// <returns>Whether the <see cref="DiscordMessage"/> is equal to this <see cref="DiscordMessage"/>.</returns>
         public bool Equals(DiscordMessage e)
         {
-            if (ReferenceEquals(e, null))
+            if (e is null)
                 return false;
 
             if (ReferenceEquals(this, e))

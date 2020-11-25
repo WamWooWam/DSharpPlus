@@ -507,9 +507,9 @@ namespace DSharpPlus
                         await this.ConnectAsync().ConfigureAwait(false);
                     else
                         if (this._status.IdleSince.HasValue)
-                            await this.ConnectAsync(this._status._activity, this._status.Status, Utilities.GetDateTimeOffsetFromMilliseconds(this._status.IdleSince.Value)).ConfigureAwait(false);
-                        else
-                            await this.ConnectAsync(this._status._activity, this._status.Status).ConfigureAwait(false);
+                        await this.ConnectAsync(this._status._activity, this._status.Status, Utilities.GetDateTimeOffsetFromMilliseconds(this._status.IdleSince.Value)).ConfigureAwait(false);
+                    else
+                        await this.ConnectAsync(this._status._activity, this._status.Status).ConfigureAwait(false);
                 }
             }
         }
@@ -562,8 +562,8 @@ namespace DSharpPlus
         /// <param name="embed"></param>
         /// <param name="mentions">Allowed mentions in the message</param>
         /// <returns></returns>
-        public Task<DiscordMessage> SendMessageAsync(DiscordChannel channel, string content = null, bool isTTS = false, DiscordEmbed embed = null, IEnumerable<IMention> mentions = null)
-            => this.ApiClient.CreateMessageAsync(channel.Id, content, isTTS, embed, mentions);
+        public Task<DiscordMessage> SendMessageAsync(DiscordChannel channel, string content = null, bool isTTS = false, DiscordEmbed embed = null, IEnumerable<IMention> mentions = null, DiscordMessage replyTo = null)
+            => this.ApiClient.CreateMessageAsync(channel.Id, content, isTTS, embed, mentions, replyTo.Id);
 
         public Task<DiscordDmChannel> CreateDmChannelAsync(ulong user)
             => ApiClient.CreateDmAsync(user);
@@ -599,7 +599,7 @@ namespace DSharpPlus
         {
             if (this._guilds.TryGetValue(id, out var guild))
                 return guild;
-            
+
             guild = await this.ApiClient.GetGuildAsync(id).ConfigureAwait(false);
             var channels = await this.ApiClient.GetGuildChannelsAsync(guild.Id).ConfigureAwait(false);
             foreach (var channel in channels) guild._channels[channel.Id] = channel;
@@ -612,7 +612,7 @@ namespace DSharpPlus
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        public Task<DiscordGuildPreview> GetGuildPreviewAsync(ulong id) 
+        public Task<DiscordGuildPreview> GetGuildPreviewAsync(ulong id)
             => this.ApiClient.GetGuildPreviewAsync(id);
 
         /// <summary>
@@ -865,7 +865,7 @@ namespace DSharpPlus
                     break;
 
                 case "message_create":
-                    await OnMessageCreateEventAsync(dat.ToDiscordObject<DiscordMessage>(), dat["author"].ToObject<TransportUser>()).ConfigureAwait(false);
+                    await OnMessageCreateEventAsync(dat).ConfigureAwait(false);
                     break;
 
                 case "message_update":
@@ -1389,8 +1389,8 @@ namespace DSharpPlus
                     AfkChannelId = gld.AfkChannelId,
                     AfkTimeout = gld.AfkTimeout,
                     DefaultMessageNotifications = gld.DefaultMessageNotifications,
-                    EmbedChannelId = gld.EmbedChannelId,
-                    EmbedEnabled = gld.EmbedEnabled,
+                    WidgetChannelId = gld.WidgetChannelId,
+                    WidgetEnabled = gld.WidgetEnabled,
                     ExplicitContentFilter = gld.ExplicitContentFilter,
                     Features = gld.Features,
                     IconHash = gld.IconHash,
@@ -1409,12 +1409,10 @@ namespace DSharpPlus
                     SplashHash = gld.SplashHash,
                     SystemChannelId = gld.SystemChannelId,
                     SystemChannelFlags = gld.SystemChannelFlags,
-                    WidgetEnabled = gld.WidgetEnabled,
-                    WidgetChannelId = gld.WidgetChannelId,
                     VerificationLevel = gld.VerificationLevel,
                     RulesChannelId = gld.RulesChannelId,
                     PublicUpdatesChannelId = gld.PublicUpdatesChannelId,
-                    VoiceRegionId = gld.VoiceRegionId,   
+                    VoiceRegionId = gld.VoiceRegionId,
                     _channels = new ConcurrentDictionary<ulong, DiscordChannel>(),
                     _emojis = new ConcurrentDictionary<ulong, DiscordEmoji>(),
                     _members = new ConcurrentDictionary<ulong, DiscordMember>(),
@@ -1772,7 +1770,7 @@ namespace DSharpPlus
             var guild = this.InternalGetCachedGuild(guildId);
             var channel = this.InternalGetCachedChannel(channelId);
 
-            invite.Discord = this;            
+            invite.Discord = this;
 
             guild._invites[invite.Code] = invite;
 
@@ -1844,8 +1842,9 @@ namespace DSharpPlus
             await this._messageAcknowledged.InvokeAsync(new MessageAcknowledgeEventArgs(this) { Message = msg }).ConfigureAwait(false);
         }
 
-        internal async Task OnMessageCreateEventAsync(DiscordMessage message, TransportUser author)
+        internal async Task OnMessageCreateEventAsync(JToken dat)
         {
+            var message = ApiClient.PrepareMessage(dat);
             message.Discord = this;
 
             if (message.Channel == null)
@@ -1853,53 +1852,9 @@ namespace DSharpPlus
             else
                 message.Channel.LastMessageId = message.Id;
 
-            var guild = message.Channel?.Guild;
-
-
-            if (!this.UserCache.TryGetValue(author.Id, out var usr))
-                this.UserCache[author.Id] = (usr = new DiscordUser(author) { Discord = this });
-
-            if (guild != null)
-            {
-                if (!guild.Members.TryGetValue(author.Id, out var mbr))
-                    guild._members[author.Id] = mbr = new DiscordMember(usr) { Discord = this, _guild_id = guild.Id };
-                message.Author = mbr;
-            }
-            else
-            {
-                message.Author = usr;
-            }
-
-            var mentionedUsers = new List<DiscordUser>();
-            var mentionedRoles = guild != null ? new List<DiscordRole>() : null;
-            var mentionedChannels = guild != null ? new List<DiscordChannel>() : null;
-
-            if (!string.IsNullOrWhiteSpace(message.Content))
-            {
-                if (guild != null)
-                {
-                    mentionedUsers = Utilities.GetUserMentions(message).Select(xid => guild._members.TryGetValue(xid, out var member) ? member : new DiscordUser { Id = xid, Discord = this }).Cast<DiscordUser>().ToList();
-                    mentionedRoles = Utilities.GetRoleMentions(message).Select(xid => guild.GetRole(xid)).ToList();
-                    mentionedChannels = Utilities.GetChannelMentions(message).Select(xid => guild.GetChannel(xid)).ToList();
-                }
-                else
-                {
-                    mentionedUsers = Utilities.GetUserMentions(message).Select(this.GetCachedOrEmptyUserInternal).ToList();
-                }
-            }
-
-            message._mentionedUsers = mentionedUsers;
-            message._mentionedRoles = mentionedRoles;
-            message._mentionedChannels = mentionedChannels;
-
-            if (message._reactions == null)
-                message._reactions = new List<DiscordReaction>();
-            foreach (var xr in message._reactions)
-                xr.Emoji.Discord = this;
-
             if (message.Channel?.ReadState != null)
             {
-                if (author.Id != CurrentUser.Id)
+                if (message.Author.Id != CurrentUser.Id)
                 {
                     if (message.MentionEveryone || message.MentionedUsers.Any(u => u?.Id == CurrentUser.Id) || message.Channel is DiscordDmChannel)
                     {
@@ -1928,9 +1883,9 @@ namespace DSharpPlus
             {
                 Message = message,
 
-                MentionedUsers = new ReadOnlyCollection<DiscordUser>(mentionedUsers),
-                MentionedRoles = mentionedRoles != null ? new ReadOnlyCollection<DiscordRole>(mentionedRoles) : null,
-                MentionedChannels = mentionedChannels != null ? new ReadOnlyCollection<DiscordChannel>(mentionedChannels) : null
+                MentionedUsers = new ReadOnlyCollection<DiscordUser>(message._mentionedUsers),
+                MentionedRoles = message._mentionedRoles != null ? new ReadOnlyCollection<DiscordRole>(message._mentionedRoles) : null,
+                MentionedChannels = message._mentionedChannels != null ? new ReadOnlyCollection<DiscordChannel>(message._mentionedChannels) : null
             };
             await this._messageCreated.InvokeAsync(ea).ConfigureAwait(false);
         }
@@ -2760,8 +2715,8 @@ namespace DSharpPlus
             guild.AfkChannelId = newGuild.AfkChannelId;
             guild.AfkTimeout = newGuild.AfkTimeout;
             guild.DefaultMessageNotifications = newGuild.DefaultMessageNotifications;
-            guild.EmbedChannelId = newGuild.EmbedChannelId;
-            guild.EmbedEnabled = newGuild.EmbedEnabled;
+            guild.WidgetChannelId = newGuild.WidgetChannelId;
+            guild.WidgetEnabled = newGuild.WidgetEnabled;
             guild.Features = newGuild.Features;
             guild.IconHash = newGuild.IconHash;
             guild.MfaLevel = newGuild.MfaLevel;
@@ -2859,7 +2814,7 @@ namespace DSharpPlus
         // this shit should never be in vanilla D#+
         #region Helpers 
 
-        public Task SendSocketMessageAsync(string message) 
+        public Task SendSocketMessageAsync(string message)
             => _webSocketClient.SendMessageAsync(message);
 
         public bool TryGetCachedGuild(ulong id, out DiscordGuild guild)

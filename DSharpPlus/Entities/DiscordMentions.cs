@@ -36,36 +36,51 @@ namespace DSharpPlus.Entities
         [JsonProperty("parse", NullValueHandling = NullValueHandling.Ignore)]
         public IEnumerable<string> Parse { get; }
 
+        /// <summary>
+        /// Will we ping the author of the message being replied to?
+        /// </summary>
+        [JsonProperty("replied_user", NullValueHandling = NullValueHandling.Ignore)]
+        public bool? RepliedUser { get; }
+
         internal DiscordMentions(IEnumerable<IMention> mentions)
         {
             HashSet<ulong> roles = new HashSet<ulong>();
             HashSet<ulong> users = new HashSet<ulong>();
             HashSet<string> parse = new HashSet<string>();
 
-            foreach(var m in mentions)
+            foreach (var m in mentions)
             {
-                switch(m)
+                switch (m)
                 {
                     default: throw new NotSupportedException("Type not supported in mentions.");
                     case UserMention u:
-                        if (u.Id.HasValue) {
+                        if (u.Id.HasValue)
+                        {
                             users.Add(u.Id.Value);      //We have a user ID so we will add them to the implicit
-                        } else {
+                        }
+                        else
+                        {
                             parse.Add(ParseUsers);      //We have no ID, so let all users through
                         }
 
                         break;
 
                     case RoleMention r:
-                        if (r.Id.HasValue) {
+                        if (r.Id.HasValue)
+                        {
                             users.Add(r.Id.Value);      //We have a role ID so we will add them to the implicit
-                        } else {
+                        }
+                        else
+                        {
                             parse.Add(ParseRoles);      //We have role ID, so let all users through
                         }
                         break;
 
                     case EveryoneMention e:
                         parse.Add(ParseEveryone);
+                        break;
+                    case RepliedUserMention _:
+                        RepliedUser = true;
                         break;
                 }
             }
