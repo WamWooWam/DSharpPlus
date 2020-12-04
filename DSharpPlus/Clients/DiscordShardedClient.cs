@@ -53,8 +53,8 @@ namespace DSharpPlus
         /// <summary>
         /// Gets the list of available voice regions. Note that this property will not contain VIP voice regions.
         /// </summary>
-        public IReadOnlyDictionary<string, DiscordVoiceRegion> VoiceRegions 
-            => this._voiceRegionsLazy?.Value;
+        public IReadOnlyDictionary<string, DiscordVoiceRegion> VoiceRegions
+            => this._internalVoiceRegions;
 
         #endregion
 
@@ -68,7 +68,6 @@ namespace DSharpPlus
         private ConcurrentDictionary<string, DiscordVoiceRegion> _internalVoiceRegions;
 
         private ConcurrentDictionary<int, DiscordClient> _shards = new ConcurrentDictionary<int, DiscordClient>();
-        private Lazy<IReadOnlyDictionary<string, DiscordVoiceRegion>> _voiceRegionsLazy;
         private bool _isStarted = false;
 
         #endregion
@@ -84,7 +83,7 @@ namespace DSharpPlus
             this.InternalSetup();
 
             this.Configuration = config;
-            this.ShardClients = new ReadOnlyConcurrentDictionary<int, DiscordClient>(this._shards);
+            this.ShardClients = this._shards;
 
             if (this.Configuration.LoggerFactory == null)
             {
@@ -339,7 +338,6 @@ namespace DSharpPlus
             if (this._internalVoiceRegions != null)
             {
                 client.InternalVoiceRegions = this._internalVoiceRegions;
-                client._voice_regions_lazy = new Lazy<IReadOnlyDictionary<string, DiscordVoiceRegion>>(() => new ReadOnlyDictionary<string, DiscordVoiceRegion>(client.InternalVoiceRegions));
             }
 
             this.HookEventHandlers(client);
@@ -357,7 +355,6 @@ namespace DSharpPlus
             if (this._internalVoiceRegions == null)
             {
                 this._internalVoiceRegions = client.InternalVoiceRegions;
-                this._voiceRegionsLazy = new Lazy<IReadOnlyDictionary<string, DiscordVoiceRegion>>(() => new ReadOnlyDictionary<string, DiscordVoiceRegion>(this._internalVoiceRegions));
             }
         }
 
@@ -370,7 +367,6 @@ namespace DSharpPlus
                 this.Logger.LogInformation(LoggerEvents.ShardShutdown, "Disposing {0} shards.", this._shards.Count);
 
             this._isStarted = false;
-            this._voiceRegionsLazy = null;
 
             this.GatewayInfo = null;
             this.CurrentUser = null;

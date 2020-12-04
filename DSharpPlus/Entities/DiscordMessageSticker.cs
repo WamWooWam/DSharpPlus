@@ -9,7 +9,7 @@ namespace DSharpPlus.Entities
     public class DiscordMessageSticker : SnowflakeObject, IEquatable<DiscordMessageSticker>
     {
         [JsonProperty("tags", NullValueHandling = NullValueHandling.Ignore)]
-        private string _internalTags;
+        internal string _internalTags;
 
         /// <summary>
         /// Gets the Pack ID of this sticker.

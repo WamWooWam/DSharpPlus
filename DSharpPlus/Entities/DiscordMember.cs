@@ -17,7 +17,6 @@ namespace DSharpPlus.Entities
     {
         internal DiscordMember()
         {
-            this._role_ids_lazy = new Lazy<IReadOnlyList<ulong>>(() => new ReadOnlyCollection<ulong>(this._role_ids));
         }
 
         internal DiscordMember(DiscordUser user)
@@ -27,7 +26,6 @@ namespace DSharpPlus.Entities
             this.Id = user.Id;
 
             this._role_ids = new List<ulong>();
-            this._role_ids_lazy = new Lazy<IReadOnlyList<ulong>>(() => new ReadOnlyCollection<ulong>(this._role_ids));
         }
 
         internal DiscordMember(TransportMember mbr)
@@ -40,7 +38,6 @@ namespace DSharpPlus.Entities
             this.PremiumSince = mbr.PremiumSince;
 
             this._role_ids = mbr.Roles ?? new List<ulong>();
-            this._role_ids_lazy = new Lazy<IReadOnlyList<ulong>>(() => new ReadOnlyCollection<ulong>(this._role_ids));
         }
 
         /// <summary>
@@ -61,12 +58,10 @@ namespace DSharpPlus.Entities
         /// </summary>
         [JsonIgnore]
         internal IReadOnlyList<ulong> RoleIds 
-            => this._role_ids_lazy.Value;
+            => this._role_ids;
 
         [JsonProperty("roles", NullValueHandling = NullValueHandling.Ignore)]
         internal List<ulong> _role_ids;
-        [JsonIgnore]
-        private Lazy<IReadOnlyList<ulong>> _role_ids_lazy;
 
         /// <summary>
         /// Gets the list of roles associated with this member.

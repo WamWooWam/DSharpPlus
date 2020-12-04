@@ -34,7 +34,7 @@ namespace DSharpPlus
         private ManualResetEventSlim ConnectionLock { get; } = new ManualResetEventSlim(true);
 
         #endregion
-        
+
         #region Public Fields/Properties
         /// <summary>
         /// Gets the gateway protocol version.
@@ -74,7 +74,7 @@ namespace DSharpPlus
         /// Gets a dictionary of DM channels that have been cached by this client. The dictionary's key is the channel
         /// ID.
         /// </summary>
-        public IReadOnlyDictionary<ulong, DiscordDmChannel> PrivateChannels { get; }
+        public IReadOnlyDictionary<ulong, DiscordDmChannel> PrivateChannels => _privateChannels;
         internal ConcurrentDictionary<ulong, DiscordDmChannel> _privateChannels = new ConcurrentDictionary<ulong, DiscordDmChannel>();
 
         /// <summary>
@@ -82,7 +82,7 @@ namespace DSharpPlus
         /// guild objects in this dictionary will not be filled in if the specific guilds aren't available (the
         /// <see cref="GuildAvailable"/> or <see cref="GuildDownloadCompleted"/> events haven't been fired yet)
         /// </summary>
-        public override IReadOnlyDictionary<ulong, DiscordGuild> Guilds { get; }
+        public override IReadOnlyDictionary<ulong, DiscordGuild> Guilds => _guilds;
         internal ConcurrentDictionary<ulong, DiscordGuild> _guilds = new ConcurrentDictionary<ulong, DiscordGuild>();
 
         /// <summary>
@@ -97,11 +97,10 @@ namespace DSharpPlus
         /// Gets the collection of presences held by this client.
         /// </summary>
         public IReadOnlyDictionary<ulong, DiscordPresence> Presences
-            => this._presencesLazy.Value;
+            => this._presences;
 
-        internal Dictionary<ulong, DiscordPresence> _presences = new 
+        internal Dictionary<ulong, DiscordPresence> _presences = new
             Dictionary<ulong, DiscordPresence>();
-        private Lazy<IReadOnlyDictionary<ulong, DiscordPresence>> _presencesLazy;
         #endregion
 
         #region Constructor/Internal Setup
@@ -126,9 +125,6 @@ namespace DSharpPlus
             }
 
             this.InternalSetup();
-
-            this.Guilds = new ReadOnlyConcurrentDictionary<ulong, DiscordGuild>(this._guilds);
-            this.PrivateChannels = new ReadOnlyConcurrentDictionary<ulong, DiscordDmChannel>(this._privateChannels);
         }
 
         internal void InternalSetup()
@@ -184,8 +180,6 @@ namespace DSharpPlus
             this._heartbeated = new AsyncEvent<DiscordClient, HeartbeatEventArgs>("HEARTBEATED", EventExecutionLimit, this.EventErrorHandler);
 
             this._guilds.Clear();
-
-            this._presencesLazy = new Lazy<IReadOnlyDictionary<ulong, DiscordPresence>>(() => new ReadOnlyDictionary<ulong, DiscordPresence>(this._presences));
         }
 
         #endregion
@@ -415,7 +409,7 @@ namespace DSharpPlus
         {
             if (this._guilds.TryGetValue(id, out var guild) && (!withCounts.HasValue || !withCounts.Value))
                 return guild;
-            
+
             guild = await this.ApiClient.GetGuildAsync(id, withCounts).ConfigureAwait(false);
             var channels = await this.ApiClient.GetGuildChannelsAsync(guild.Id).ConfigureAwait(false);
             foreach (var channel in channels) guild._channels[channel.Id] = channel;
@@ -431,7 +425,7 @@ namespace DSharpPlus
         /// <exception cref="Exceptions.NotFoundException">Thrown when the guild does not exist.</exception>
         /// <exception cref="Exceptions.BadRequestException">Thrown when an invalid parameter was provided.</exception>
         /// <exception cref="Exceptions.ServerErrorException">Thrown when Discord is unable to process the request.</exception>
-        public Task<DiscordGuildPreview> GetGuildPreviewAsync(ulong id) 
+        public Task<DiscordGuildPreview> GetGuildPreviewAsync(ulong id)
             => this.ApiClient.GetGuildPreviewAsync(id);
 
         /// <summary>
@@ -595,7 +589,7 @@ namespace DSharpPlus
                     }
                 }
             }
-            else if(usr.Username != null) // check if not a skeleton user
+            else if (usr.Username != null) // check if not a skeleton user
             {
                 _ = this.UserCache.AddOrUpdate(usr.Id, usr, (id, old) =>
                 {
@@ -740,7 +734,7 @@ namespace DSharpPlus
             var extensions = this._extensions; // prevent _extensions being modified during dispose
             this._extensions = null;
             foreach (var extension in extensions)
-                if (extension is IDisposable disposable) 
+                if (extension is IDisposable disposable)
                     disposable.Dispose();
 
             try

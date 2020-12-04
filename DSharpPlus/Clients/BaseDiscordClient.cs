@@ -54,13 +54,12 @@ namespace DSharpPlus
         /// Gets the list of available voice regions. Note that this property will not contain VIP voice regions.
         /// </summary>
         public IReadOnlyDictionary<string, DiscordVoiceRegion> VoiceRegions 
-            => this._voice_regions_lazy.Value;
+            => this.InternalVoiceRegions;
 
         /// <summary>
         /// Gets the list of available voice regions. This property is meant as a way to modify <see cref="VoiceRegions"/>.
         /// </summary>
         protected internal ConcurrentDictionary<string, DiscordVoiceRegion> InternalVoiceRegions { get; set; }
-        internal Lazy<IReadOnlyDictionary<string, DiscordVoiceRegion>> _voice_regions_lazy;
 
         /// <summary>
         /// Initializes this Discord API client.
@@ -80,8 +79,6 @@ namespace DSharpPlus
             this.ApiClient = new DiscordApiClient(this);
             this.UserCache = new ConcurrentDictionary<ulong, DiscordUser>();
             this.InternalVoiceRegions = new ConcurrentDictionary<string, DiscordVoiceRegion>();
-            this._voice_regions_lazy = new Lazy<IReadOnlyDictionary<string, DiscordVoiceRegion>>(() => new ReadOnlyDictionary<string, DiscordVoiceRegion>(this.InternalVoiceRegions));
-
             var a = typeof(DiscordClient).GetTypeInfo().Assembly;
 
             var iv = a.GetCustomAttribute<AssemblyInformationalVersionAttribute>();

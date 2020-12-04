@@ -17,10 +17,9 @@ namespace DSharpPlus
         /// Gets the dictionary of guilds cached by this client.
         /// </summary>
         public override IReadOnlyDictionary<ulong, DiscordGuild> Guilds
-            => _guilds_lazy.Value;
+            => _guilds;
 
         internal Dictionary<ulong, DiscordGuild> _guilds = new Dictionary<ulong, DiscordGuild>();
-        private Lazy<IReadOnlyDictionary<ulong, DiscordGuild>> _guilds_lazy;
 
         public DiscordRestClient(DiscordConfiguration config) : base(config)
         {
@@ -34,7 +33,6 @@ namespace DSharpPlus
         public async Task InitializeCacheAsync()
         {
             await base.InitializeAsync().ConfigureAwait(false);
-            _guilds_lazy = new Lazy<IReadOnlyDictionary<ulong, DiscordGuild>>(() => new ReadOnlyDictionary<ulong, DiscordGuild>(_guilds));
             var gs = await this.ApiClient.GetCurrentUserGuildsAsync(100, null, null).ConfigureAwait(false);
             foreach (DiscordGuild g in gs)
             {
