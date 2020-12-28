@@ -56,5 +56,10 @@ namespace DSharpPlus.VoiceNext
         /// Events containing raw payloads, as they're being sent to Discord Voice Gateway.
         /// </summary>
         public static EventId VoiceWsTx { get; } = new EventId(309, "Voice ↑");
+
+        /// <summary>
+        /// Events containing raw payloads, as they're being sent to Discord Voice Gateway.
+        /// </summary>
+        public static EventId VoicePacketCompensation { get; } = new EventId(310, nameof(VoicePacketCompensation));
     }
 }

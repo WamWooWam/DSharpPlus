@@ -297,6 +297,17 @@ namespace DSharpPlus.VoiceNext
             this._queueCount++;
         }
 
+        private bool DequeuePacket(ChannelReader<RawVoicePacket> reader, out RawVoicePacket packet)
+        {
+            if (reader.TryRead(out packet))
+            {
+                this._queueCount--;
+                return true;
+            }
+
+            return false;
+        }
+
         internal bool PreparePacket(ReadOnlySpan<byte> pcm, out byte[] target, out int length)
         {
             target = null;
@@ -366,11 +377,9 @@ namespace DSharpPlus.VoiceNext
             {
                 await this.PauseEvent.WaitAsync().ConfigureAwait(false);
 
-                var hasPacket = reader.TryRead(out var rawPacket);
+                var hasPacket = DequeuePacket(reader, out var rawPacket);
                 if (hasPacket)
                 {
-                    this._queueCount--;
-
                     if (this.PlayingWait == null || this.PlayingWait.Task.IsCompleted)
                         this.PlayingWait = new TaskCompletionSource<bool>();
                 }
@@ -397,8 +406,24 @@ namespace DSharpPlus.VoiceNext
 
                 var durationModifier = hasPacket ? rawPacket.Duration / 5 : 4;
                 var cts = Math.Max(Stopwatch.GetTimestamp() - synchronizerTicks, 0);
+                var waitDuration = TimeSpan.FromTicks((long)(((synchronizerResolution * durationModifier) - cts) * tickResolution));
+                var ms = Math.Abs(waitDuration.TotalMilliseconds);
+
                 if (cts < synchronizerResolution * durationModifier)
-                    await Task.Delay(TimeSpan.FromTicks((long)(((synchronizerResolution * durationModifier) - cts) * tickResolution))).ConfigureAwait(false);
+                {
+                    await Task.Delay(waitDuration).ConfigureAwait(false);
+                }
+                else if (waitDuration < TimeSpan.Zero && ms > 20)
+                {
+                    var packets = (int)Math.Ceiling(ms / 20);
+                    this.Discord.Logger.LogDebug(VoiceNextEvents.VoicePacketCompensation, "Connection too slow! Skipping {0} packets ({1} ms) to compensate", packets, ms);
+
+                    for (int i = 0; i < packets; i++)
+                        DequeuePacket(reader, out _);
+
+                    synchronizerTicks += synchronizerResolution * durationModifier * packets;
+                    hasPacket = false;
+                }
 
                 synchronizerTicks += synchronizerResolution * durationModifier;
 
