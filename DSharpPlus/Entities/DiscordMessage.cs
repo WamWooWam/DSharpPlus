@@ -31,6 +31,7 @@ namespace DSharpPlus.Entities
             });
             this._mentionedUsersLazy = new Lazy<IReadOnlyList<DiscordUser>>(() => new ReadOnlyCollection<DiscordUser>(this._mentionedUsers));
             this._reactionsLazy = new Lazy<IReadOnlyList<DiscordReaction>>(() => new ReadOnlyCollection<DiscordReaction>(this._reactions));
+            this._stickersLazy = new Lazy<IReadOnlyList<DiscordMessageSticker>>(() => new ReadOnlyCollection<DiscordMessageSticker>(this._stickers));
             this._jumpLink = new Lazy<Uri>(() =>
             {
                 var gid = this.Channel is DiscordDmChannel ? "@me" : this.Channel.GuildId.ToString(CultureInfo.InvariantCulture);
@@ -55,6 +56,7 @@ namespace DSharpPlus.Entities
                 this._mentionedRoles = new List<DiscordRole>(other._mentionedRoles);
             this._mentionedUsers = new List<DiscordUser>(other._mentionedUsers);
             this._reactions = new List<DiscordReaction>(other._reactions);
+            this._stickers = new List<DiscordMessageSticker>(other._stickers);
 
             this.Author = other.Author;
             this.ChannelId = other.ChannelId;
@@ -276,6 +278,18 @@ namespace DSharpPlus.Entities
         public Uri JumpLink => this._jumpLink.Value;
         private Lazy<Uri> _jumpLink;
 
+        /// <summary>
+        /// Gets stickers for this message.
+        /// </summary>
+        [JsonIgnore]
+        public IReadOnlyList<DiscordMessageSticker> Stickers
+            => this._stickersLazy.Value;
+
+        [JsonProperty("stickers", NullValueHandling = NullValueHandling.Ignore)]
+        internal List<DiscordMessageSticker> _stickers = new List<DiscordMessageSticker>();
+        [JsonIgnore]
+        private Lazy<IReadOnlyList<DiscordMessageSticker>> _stickersLazy;
+
         internal DiscordMessageReference InternalBuildMessageReference()
         {
             var client = this.Discord as DiscordClient;
@@ -334,13 +348,14 @@ namespace DSharpPlus.Entities
         /// </summary>
         /// <param name="content">New content.</param>
         /// <param name="embed">New embed.</param>
+        /// <param name="mentions">Allowed mentions in the message.</param>
         /// <returns></returns>
         /// <exception cref="Exceptions.UnauthorizedException">Thrown when the client tried to modify a message not sent by them.</exception>
         /// <exception cref="Exceptions.NotFoundException">Thrown when the member does not exist.</exception>
         /// <exception cref="Exceptions.BadRequestException">Thrown when an invalid parameter was provided.</exception>
         /// <exception cref="Exceptions.ServerErrorException">Thrown when Discord is unable to process the request.</exception>
-        public Task<DiscordMessage> ModifyAsync(Optional<string> content = default, Optional<DiscordEmbed> embed = default) 
-            => this.Discord.ApiClient.EditMessageAsync(this.ChannelId, this.Id, content, embed);
+        public Task<DiscordMessage> ModifyAsync(Optional<string> content = default, Optional<DiscordEmbed> embed = default, IEnumerable<IMention> mentions = null) 
+            => this.Discord.ApiClient.EditMessageAsync(this.ChannelId, this.Id, content, embed, mentions);
 
         /// <summary>
         /// Deletes the message.

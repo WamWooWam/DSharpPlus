@@ -19,6 +19,12 @@ To proxy your traffic, create a new instance of `System.Net.WebProxy` and assign
 `VoiceNextClient`|`VoiceNextExtension`
 `BaseModule`|`BaseExtension`
 
+### Intents
+In certain circumstances intents will have to be enabled to receive certain events in both the 
+@DSharpPlus.DiscordConfiguration and the Discord Application Portal.  We have an
+[article](xref:beyond_basics_intents) that covers all that has to be done to set
+this up.
+
 ### Entity mutation changes
 Entity updating methods now take an action which mutates the state of the 
 object, instead of taking large lists of arguments. This means that instead of 
@@ -37,6 +43,19 @@ await role.UpdateAsync(x =>
 	x.Color = new DiscordColor(0xFF00FF);
 });
 ```
+
+### Logging Changes
+Logging was overhauled and now some of the Properties on @DSharpPlus.DiscordConfiguration along with 
+some of the events on @DSharpPlus.DiscordClient are Gone/Modified/Added.  Below is a listing of what changed:
+- **@DSharpPlus.DiscordConfiguration.LoggerFactory** - this is where you can specify your own logging factory 
+  to help augment the output of the log messages, redirect the output to other locations, etc
+- **@DSharpPlus.DiscordConfiguration.MinimumLogLevel**  -  this replaces LogLevel
+- **DebugLogger** - this has been removed.
+- **UseInternalLogHandler** - this has been removed.
+- **DebugLogMessageEventArgs** - this event has been removed.
+
+We have also created an [article](xref:beyond_basics_logging_default) on how to setup the new logger
+
 
 ### Other minor changes
 - **User DM handling** - Users can no longer be DM'd directly. Instead, you 
