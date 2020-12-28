@@ -721,7 +721,7 @@ namespace DSharpPlus.VoiceNext
             this.IsDisposed = true;
             this.IsInitialized = false;
             this.TokenSource.Cancel();
-            this.SenderTokenSource.Cancel();
+            this.SenderTokenSource?.Cancel();
             if (this.Configuration.EnableIncoming)
                 this.ReceiverTokenSource.Cancel();
 
