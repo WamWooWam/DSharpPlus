@@ -15,6 +15,10 @@ namespace DSharpPlus.Entities
     /// </summary>
     public class DiscordMember : DiscordUser, IEquatable<DiscordMember>
     {
+        private string _nickname;
+        private bool _isDeafened;
+        private bool _isMuted;
+
         internal DiscordMember()
         {
             this.IsLocal = true;
@@ -47,21 +51,21 @@ namespace DSharpPlus.Entities
         /// Gets this member's nickname.
         /// </summary>
         [JsonProperty("nick", NullValueHandling = NullValueHandling.Ignore)]
-        public string Nickname { get; internal set; }
+        public string Nickname { get => _nickname; internal set => OnPropertySet(ref _nickname, value, nameof(Nickname), nameof(DisplayName)); }
 
         /// <summary>
         /// Gets this member's display name.
         /// </summary>
         [JsonIgnore]
-        public override string DisplayName 
+        public override string DisplayName
             => this.Nickname ?? this.Username;
 
         /// <summary>
         /// List of role ids
         /// </summary>
         [JsonIgnore]
-        internal IReadOnlyList<ulong> RoleIds 
-            => this._roleIds;
+        public IReadOnlyList<ulong> RoleIds
+            => this._roleIds ?? (IReadOnlyList<ulong>)Array.Empty<ulong>();
 
         [JsonIgnore]
         public bool IsLocal { get; internal set; }
@@ -73,7 +77,7 @@ namespace DSharpPlus.Entities
         /// Gets the list of roles associated with this member.
         /// </summary>
         [JsonIgnore]
-        public IEnumerable<DiscordRole> Roles 
+        public IEnumerable<DiscordRole> Roles
             => this.RoleIds.Select(id => this.Guild.GetRole(id));
 
         /// <summary>
@@ -107,19 +111,19 @@ namespace DSharpPlus.Entities
         /// If the user is deafened
         /// </summary>
         [JsonProperty("is_deafened", NullValueHandling = NullValueHandling.Ignore)]
-        public bool IsDeafened { get; internal set; }
+        public bool IsDeafened { get => _isDeafened; internal set => OnPropertySet(ref _isDeafened, value); }
 
         /// <summary>
         /// If the user is muted
         /// </summary>
         [JsonProperty("is_muted", NullValueHandling = NullValueHandling.Ignore)]
-        public bool IsMuted { get; internal set; }
+        public bool IsMuted { get => _isMuted; internal set => OnPropertySet(ref _isMuted, value); }
 
         /// <summary>
         /// Gets this member's voice state.
         /// </summary>
         [JsonIgnore]
-        public DiscordVoiceState VoiceState 
+        public DiscordVoiceState VoiceState
             => this.Discord.Guilds[this._guild_id].VoiceStates.TryGetValue(this.Id, out var voiceState) ? voiceState : null;
 
         [JsonIgnore]
@@ -129,14 +133,14 @@ namespace DSharpPlus.Entities
         /// Gets the guild of which this member is a part of.
         /// </summary>
         [JsonIgnore]
-        public DiscordGuild Guild 
+        public DiscordGuild Guild
             => this.Discord.Guilds[_guild_id];
 
         /// <summary>
         /// Gets whether this member is the Guild owner.
         /// </summary>
         [JsonIgnore]
-        public bool IsOwner 
+        public bool IsOwner
             => this.Id == this.Guild.OwnerId;
 
         /// <summary>
@@ -148,7 +152,7 @@ namespace DSharpPlus.Entities
 
         #region Overridden user properties
         [JsonIgnore]
-        internal DiscordUser User 
+        internal DiscordUser User
             => this.Discord.UserCache[this.Id];
 
         /// <summary>
@@ -228,19 +232,19 @@ namespace DSharpPlus.Entities
         /// <summary>
         /// Gets the user's flags.
         /// </summary>
-        public override UserFlags? OAuthFlags 
-        { 
-            get => this.User.OAuthFlags; 
-            internal set => this.User.OAuthFlags = value; 
+        public override UserFlags? OAuthFlags
+        {
+            get => this.User.OAuthFlags;
+            internal set => this.User.OAuthFlags = value;
         }
 
         /// <summary>
         /// Gets the member's flags for OAuth.
         /// </summary>
-        public override UserFlags? Flags 
-        { 
-            get => this.User.Flags; 
-            internal set => this.User.Flags = value; 
+        public override UserFlags? Flags
+        {
+            get => this.User.Flags;
+            internal set => this.User.Flags = value;
         }
         #endregion
 
@@ -248,7 +252,7 @@ namespace DSharpPlus.Entities
         /// Creates a direct message channel to this member.
         /// </summary>
         /// <returns>Direct message channel to this member.</returns>
-        public Task<DiscordDmChannel> CreateDmChannelAsync() 
+        public Task<DiscordDmChannel> CreateDmChannelAsync()
             => this.Discord.ApiClient.CreateDmAsync(this.Id);
 
         /// <summary>
@@ -262,7 +266,7 @@ namespace DSharpPlus.Entities
         {
             if (this.IsBot && this.Discord.CurrentUser.IsBot)
                 throw new ArgumentException("Bots cannot DM each other.");
-            
+
             var chn = await this.CreateDmChannelAsync().ConfigureAwait(false);
             return await chn.SendMessageAsync(content, is_tts, embed).ConfigureAwait(false);
         }
@@ -280,7 +284,7 @@ namespace DSharpPlus.Entities
         {
             if (this.IsBot && this.Discord.CurrentUser.IsBot)
                 throw new ArgumentException("Bots cannot DM each other.");
-            
+
             var chn = await this.CreateDmChannelAsync().ConfigureAwait(false);
             return await chn.SendFileAsync(fileName, fileData, content, is_tts, embed).ConfigureAwait(false);
         }
@@ -342,16 +346,16 @@ namespace DSharpPlus.Entities
         /// <param name="mute">Whether the member is to be muted.</param>
         /// <param name="reason">Reason for audit logs.</param>
         /// <returns></returns>
-        public Task SetMuteAsync(bool mute, string reason = null) 
+        public Task SetMuteAsync(bool mute, string reason = null)
             => this.Discord.ApiClient.ModifyGuildMemberAsync(_guild_id, this.Id, default, default, mute, default, default, reason);
-        
+
         /// <summary>
         /// Sets this member's voice deaf status.
         /// </summary>
         /// <param name="deaf">Whether the member is to be deafened.</param>
         /// <param name="reason">Reason for audit logs.</param>
         /// <returns></returns>
-        public Task SetDeafAsync(bool deaf, string reason = null) 
+        public Task SetDeafAsync(bool deaf, string reason = null)
             => this.Discord.ApiClient.ModifyGuildMemberAsync(_guild_id, this.Id, default, default, default, deaf, default, reason);
 
         /// <summary>
@@ -390,7 +394,7 @@ namespace DSharpPlus.Entities
         /// <param name="role">Role to grant.</param>
         /// <param name="reason">Reason for audit logs.</param>
         /// <returns></returns>
-        public Task GrantRoleAsync(DiscordRole role, string reason = null) 
+        public Task GrantRoleAsync(DiscordRole role, string reason = null)
             => this.Discord.ApiClient.AddGuildMemberRoleAsync(this.Guild.Id, this.Id, role.Id, reason);
 
         /// <summary>
@@ -399,7 +403,7 @@ namespace DSharpPlus.Entities
         /// <param name="role">Role to revoke.</param>
         /// <param name="reason">Reason for audit logs.</param>
         /// <returns></returns>
-        public Task RevokeRoleAsync(DiscordRole role, string reason = null) 
+        public Task RevokeRoleAsync(DiscordRole role, string reason = null)
             => this.Discord.ApiClient.RemoveGuildMemberRoleAsync(this.Guild.Id, this.Id, role.Id, reason);
 
         /// <summary>
@@ -408,7 +412,7 @@ namespace DSharpPlus.Entities
         /// <param name="roles">Roles to set.</param>
         /// <param name="reason">Reason for audit logs.</param>
         /// <returns></returns>
-        public Task ReplaceRolesAsync(IEnumerable<DiscordRole> roles, string reason = null) 
+        public Task ReplaceRolesAsync(IEnumerable<DiscordRole> roles, string reason = null)
             => this.Discord.ApiClient.ModifyGuildMemberAsync(this.Guild.Id, this.Id, default,
                 new Optional<IEnumerable<ulong>>(roles.Select(xr => xr.Id)), default, default, default, reason);
 
@@ -418,7 +422,7 @@ namespace DSharpPlus.Entities
         /// <param name="delete_message_days">How many days to remove messages from.</param>
         /// <param name="reason">Reason for audit logs.</param>
         /// <returns></returns>
-        public Task BanAsync(int delete_message_days = 0, string reason = null) 
+        public Task BanAsync(int delete_message_days = 0, string reason = null)
             => this.Guild.BanMemberAsync(this, delete_message_days, reason);
 
         public Task UnbanAsync(string reason = null) => this.Guild.UnbanMemberAsync(this, reason);
@@ -437,7 +441,7 @@ namespace DSharpPlus.Entities
         /// </summary>
         /// <param name="channel"></param>
         /// <returns></returns>
-        public Task PlaceInAsync(DiscordChannel channel) 
+        public Task PlaceInAsync(DiscordChannel channel)
             => channel.PlaceMemberAsync(this);
 
         /// <summary>
@@ -563,7 +567,7 @@ namespace DSharpPlus.Entities
         /// <param name="e1">First member to compare.</param>
         /// <param name="e2">Second member to compare.</param>
         /// <returns>Whether the two members are not equal.</returns>
-        public static bool operator !=(DiscordMember e1, DiscordMember e2) 
+        public static bool operator !=(DiscordMember e1, DiscordMember e2)
             => !(e1 == e2);
     }
 }

@@ -58,6 +58,10 @@ namespace DSharpPlus.Net.Abstractions
         [JsonProperty("user_settings", NullValueHandling = NullValueHandling.Ignore)]
         public DiscordUserSettings UserSettings { get; set; }
 
+
+        [JsonProperty("user_guild_settings", NullValueHandling = NullValueHandling.Ignore)]
+        public IReadOnlyList<DiscordUserGuildSettings> UserGuildSettings { get; set; }
+
         /// <summary>
         /// Gets the current session's ID.
         /// </summary>

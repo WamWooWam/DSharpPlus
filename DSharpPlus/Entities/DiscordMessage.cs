@@ -21,13 +21,16 @@ namespace DSharpPlus.Entities
         private MessageType? _messageType;
 
         [JsonIgnore]
-        internal List<DiscordRole> _mentionedRoles;
-        [JsonIgnore]
         internal List<DiscordChannel> _mentionedChannels;
+
         [JsonProperty("reactions", NullValueHandling = NullValueHandling.Ignore)]
         internal List<DiscordReaction> _reactions = new List<DiscordReaction>();
+
         [JsonProperty("mentions", NullValueHandling = NullValueHandling.Ignore)]
         internal List<DiscordUser> _mentionedUsers;
+        [JsonProperty("mention_roles", NullValueHandling = NullValueHandling.Ignore)]
+        internal List<ulong> _mentionedRoleIds;
+
         [JsonProperty("attachments", NullValueHandling = NullValueHandling.Ignore)]
         internal List<DiscordAttachment> _attachments = new List<DiscordAttachment>();
         [JsonProperty("embeds", NullValueHandling = NullValueHandling.Ignore)]
@@ -47,10 +50,11 @@ namespace DSharpPlus.Entities
             this._attachments = other._attachments; // the attachments cannot change, thus no need to copy and reallocate.
             this._embeds = new List<DiscordEmbed>(other._embeds);
 
+            if (other._mentionedRoleIds != null)
+                this._mentionedRoleIds = new List<ulong>(other._mentionedRoleIds);
             if (other._mentionedChannels != null)
                 this._mentionedChannels = new List<DiscordChannel>(other._mentionedChannels);
-            if (other._mentionedRoles != null)
-                this._mentionedRoles = new List<DiscordRole>(other._mentionedRoles);
+
             this._mentionedUsers = new List<DiscordUser>(other._mentionedUsers);
             this._reactions = new List<DiscordReaction>(other._reactions);
 
@@ -149,8 +153,8 @@ namespace DSharpPlus.Entities
         /// Gets roles mentioned by this message.
         /// </summary>
         [JsonIgnore]
-        public IReadOnlyList<DiscordRole> MentionedRoles
-            => this._mentionedRoles ?? (IReadOnlyList<DiscordRole>)Array.Empty<DiscordRole>();
+        public IReadOnlyList<ulong> MentionedRoleIds
+            => this._mentionedRoleIds != null && this.Channel?.Guild != null ? _mentionedRoleIds : (IReadOnlyList<ulong>)Array.Empty<ulong>();
 
         /// <summary>
         /// Gets channels mentioned by this message.
@@ -158,7 +162,6 @@ namespace DSharpPlus.Entities
         [JsonIgnore]
         public IReadOnlyList<DiscordChannel> MentionedChannels
             => this._mentionedChannels ?? (IReadOnlyList<DiscordChannel>)Array.Empty<DiscordChannel>();
-
 
         /// <summary>
         /// Gets files attached to this message.
@@ -240,6 +243,12 @@ namespace DSharpPlus.Entities
         /// </summary>
         [JsonProperty("referenced_message", NullValueHandling = NullValueHandling.Ignore)]
         public DiscordMessage ReferencedMessage { get; internal set; }
+
+        /// <summary>
+        /// Is this message a hit in search results?
+        /// </summary>
+        [JsonProperty("hit", NullValueHandling = NullValueHandling.Ignore)]
+        public Optional<bool> Hit { get; internal set; }
 
         /// <summary>
         /// Gets reactions used on this message.
@@ -354,14 +363,14 @@ namespace DSharpPlus.Entities
         /// Pins the message in its channel.
         /// </summary>
         /// <returns></returns>
-        public Task PinAsync() 
+        public Task PinAsync()
             => this.Discord.ApiClient.PinMessageAsync(this.ChannelId, this.Id);
 
         /// <summary>
         /// Unpins the message in its channel.
         /// </summary>
         /// <returns></returns>
-        public Task UnpinAsync() 
+        public Task UnpinAsync()
             => this.Discord.ApiClient.UnpinMessageAsync(this.ChannelId, this.Id);
 
         /// <summary>
@@ -372,7 +381,7 @@ namespace DSharpPlus.Entities
         /// <param name="embed">Embed to attach to the message.</param>
         /// <param name="mentions">Allowed mentions in the message</param>
         /// <returns>The sent message.</returns>
-        public Task<DiscordMessage> RespondAsync(string content = null, bool tts = false, DiscordEmbed embed = null, IEnumerable<IMention> mentions = null, DiscordMessage replyTo = null) 
+        public Task<DiscordMessage> RespondAsync(string content = null, bool tts = false, DiscordEmbed embed = null, IEnumerable<IMention> mentions = null, DiscordMessage replyTo = null)
             => this.Discord.ApiClient.CreateMessageAsync(this.ChannelId, content, tts, embed, mentions, replyTo.Id);
 
         /// <summary>
@@ -473,7 +482,7 @@ namespace DSharpPlus.Entities
         /// </summary>
         /// <param name="reason">Reason for audit logs.</param>
         /// <returns></returns>
-        public Task DeleteAllReactionsAsync(string reason = null) 
+        public Task DeleteAllReactionsAsync(string reason = null)
             => this.Discord.ApiClient.DeleteAllReactionsAsync(this.ChannelId, this.Id, reason);
 
         /// <summary>

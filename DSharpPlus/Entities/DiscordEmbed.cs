@@ -96,6 +96,7 @@ namespace DSharpPlus.Entities
 
         internal DiscordEmbed()
         {
+            Fields = new List<DiscordEmbedField>();
         }
     }
 }

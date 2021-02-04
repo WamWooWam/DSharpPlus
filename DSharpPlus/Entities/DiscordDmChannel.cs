@@ -31,7 +31,7 @@ namespace DSharpPlus.Entities
 
 
         [JsonIgnore]
-        public DiscordUser Recipient => Recipients.FirstOrDefault();
+        public DiscordUser Recipient => Type == ChannelType.Private ? Recipients.FirstOrDefault() : null;
 
         /// <summary>
         /// Gets the hash of this channel's icon.

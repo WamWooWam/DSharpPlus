@@ -171,11 +171,40 @@ namespace DSharpPlus.Entities
         public bool IsNSFW { get => _isNSFW; internal set => OnPropertySet(ref _isNSFW, value); }
 
         [JsonIgnore]
-        public bool Muted { get; set; }
+        public bool Muted
+        {
+            get
+            {
+                if (!(this.Discord is DiscordClient client))
+                    return false;
+
+                if (!client.UserGuildSettings.TryGetValue(this.GuildId, out var settings))
+                    return false;
+
+                var channelOverride = settings.ChannelOverrides?.FirstOrDefault(o => o?.ChannelId == this.Id);
+                if (channelOverride == null)
+                    return false;
+
+                if (channelOverride.MuteConfig != null)
+                {
+                    var endTime = channelOverride.MuteConfig.EndTime;
+                    if (endTime.HasValue && channelOverride.Muted)
+                        return endTime.Value < DateTimeOffset.Now;
+                }
+
+                return channelOverride.Muted;
+            }
+        }
+
+        [JsonIgnore]
+        public bool NotificationMuted => (Muted || (Parent?.Muted ?? false) || (Guild?.Muted ?? false));
 
         [JsonIgnore]
         public DiscordReadState ReadState =>
             Discord.ReadStates.TryGetValue(Id, out var state) ? state : Discord.DefaultReadState;
+
+        [JsonIgnore]
+        public bool Unread => ReadState.Unread && !Muted;
 
         [JsonIgnore]
         public IEnumerable<DiscordUser> ConnectedUsers => Type == ChannelType.Voice ? Users : null;
@@ -204,7 +233,7 @@ namespace DSharpPlus.Entities
         {
             if (this.Type != ChannelType.Text && this.Type != ChannelType.Private && this.Type != ChannelType.Group && this.Type != ChannelType.News)
                 throw new ArgumentException("Cannot send a text message to a non-text channel.");
-            
+
             return this.Discord.ApiClient.CreateMessageAsync(this.Id, content, tts, embed, mentions, replyTo?.Id);
         }
 
@@ -239,7 +268,7 @@ namespace DSharpPlus.Entities
         {
             if (this.Type != ChannelType.Text && this.Type != ChannelType.Private && this.Type != ChannelType.Group && this.Type != ChannelType.News)
                 throw new ArgumentException("Cannot send a file to a non-text channel.");
-            
+
             return this.Discord.ApiClient.UploadFileAsync(this.Id, fileData, Path.GetFileName(fileData.Name), content,
                 tts, embed, mentions);
         }
@@ -592,7 +621,7 @@ namespace DSharpPlus.Entities
         {
             if (this.Type != ChannelType.Voice)
                 throw new ArgumentException("Cannot place a member in a non-voice channel!"); // be a little more angery, let em learn!!1
-            
+
             await this.Discord.ApiClient.ModifyGuildMemberAsync(this.Guild.Id, member.Id, default, default, default,
                 default, this.Id, null).ConfigureAwait(false);
         }
@@ -609,6 +638,39 @@ namespace DSharpPlus.Entities
             }
 
             throw new InvalidOperationException("ACK can only be used when logged in as regular user.");
+        }
+
+        /// <summary>
+        /// Mutes a channel until a specified time
+        /// </summary>
+        /// <param name="unmuteAt"></param>
+        /// <returns></returns>
+        public async Task MuteAsync(DateTimeOffset? unmuteAt = null)
+        {
+            if (!(this.Discord is DiscordClient client))
+                return;
+
+            if (!client.UserGuildSettings.TryGetValue(this.GuildId, out var settings))
+                settings = new DiscordUserGuildSettings() { GuildId = this.Guild?.Id, Version = 1, ChannelOverrides = new List<DiscordUserChannelSettings>() };
+
+            var channelOverride = settings.ChannelOverrides.FirstOrDefault(o => o?.ChannelId == this.Id);
+            if (channelOverride == null)
+            {
+                channelOverride = new DiscordUserChannelSettings() { ChannelId = Id };
+                settings.ChannelOverrides.Add(channelOverride);
+            }
+
+            channelOverride.Muted = true;
+            if (unmuteAt != null)
+            {
+                channelOverride.MuteConfig = new DiscordMuteConfig()
+                {
+                    EndTime = unmuteAt.Value
+                };
+            }
+
+            settings.Version = client.UserGuildSettings.Values.Max(s => s.Version) + 1;
+            await this.Discord.ApiClient.ModifyGuildUserSettingsAsync(settings);
         }
 
         /// <summary>

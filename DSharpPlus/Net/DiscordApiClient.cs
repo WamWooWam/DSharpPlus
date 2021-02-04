@@ -36,9 +36,9 @@ namespace DSharpPlus.Net
             this.Rest = new RestClient(proxy, timeout);
         }
 
-        private static string BuildQueryString(IDictionary<string, string> values, bool post = false)
+        private static string BuildQueryString(IEnumerable<KeyValuePair<string, string>> values, bool post = false)
         {
-            if (values == null || values.Count == 0)
+            if (values == null || !values.Any())
                 return string.Empty;
 
             var vals_collection = values.Select(xkvp =>
@@ -48,11 +48,18 @@ namespace DSharpPlus.Net
             return !post ? $"?{vals}" : vals;
         }
 
-        internal DiscordMessage PrepareMessage(JToken msg_raw)
+        internal DiscordMessage PrepareMessage(JToken msg_raw, bool useCache = true)
         {
+            var cache = this.Discord is DiscordClient c && useCache ? c.MessageCache : null;
             var author = msg_raw["author"].ToObject<TransportUser>();
-            var ret = msg_raw.ToDiscordObject<DiscordMessage>();
-            ret.Discord = this.Discord;
+            var raw = msg_raw.ToDiscordObject<DiscordMessage>();
+            raw.Discord = this.Discord;
+
+            var ret = raw;
+            if (cache != null && cache.TryGet((m) => m.Id == ret.Id, out var discordMessage))
+            {
+                ret = discordMessage;
+            }
 
             var guild = ret.Channel?.Guild;
 
@@ -63,33 +70,19 @@ namespace DSharpPlus.Net
             {
                 if (!guild.Members.TryGetValue(author.Id, out var mbr))
                     guild._members[author.Id] = mbr = new DiscordMember(usr) { Discord = this.Discord, _guild_id = guild.Id };
-                ret.Author = mbr;
+                ret.Author = mbr ?? usr;
             }
             else
             {
                 ret.Author = usr;
             }
 
-            var mentioned_users = new List<DiscordUser>();
-            var mentioned_roles = guild != null ? new List<DiscordRole>() : null;
             var mentioned_channels = guild != null ? new List<DiscordChannel>() : null;
-
-            if (!string.IsNullOrWhiteSpace(ret.Content))
+            if (guild != null && !string.IsNullOrWhiteSpace(ret.Content))
             {
-                if (guild != null)
-                {
-                    mentioned_users = Utilities.GetUserMentions(ret).Select(xid => guild._members.TryGetValue(xid, out var member) ? member : null).Cast<DiscordUser>().ToList();
-                    mentioned_roles = Utilities.GetRoleMentions(ret).Select(xid => guild.GetRole(xid)).ToList();
-                    mentioned_channels = Utilities.GetChannelMentions(ret).Select(xid => guild.GetChannel(xid)).ToList();
-                }
-                else
-                {
-                    mentioned_users = Utilities.GetUserMentions(ret).Select(this.Discord.GetCachedOrEmptyUserInternal).ToList();
-                }
+                mentioned_channels = Utilities.GetChannelMentions(ret).Select(xid => guild.GetChannel(xid)).ToList();
             }
 
-            ret._mentionedUsers = mentioned_users;
-            ret._mentionedRoles = mentioned_roles;
             ret._mentionedChannels = mentioned_channels;
 
             if (ret._reactions == null)
@@ -103,21 +96,13 @@ namespace DSharpPlus.Net
             foreach (var xe in ret._embeds)
                 xe.Owner = ret;
 
-            if (ret.ReferencedMessage != null)
+            if (ret.ReferencedMessage == null && raw.ReferencedMessage != null)
             {
-                var referencedMessage = ret.ReferencedMessage;
-                referencedMessage.Discord = this.Discord;
-
-                if (this.Discord is DiscordClient client && client.MessageCache.TryGet((m) => m.Id == referencedMessage.Id, out var discordMessage))
-                {
-                    ret.ReferencedMessage = discordMessage;
-                }
-                else
-                {
-                    ret.ReferencedMessage = this.PrepareMessage(msg_raw["referenced_message"]);
-                }
+                ret.ReferencedMessage = this.PrepareMessage(msg_raw["referenced_message"]);
+                ret.MessageType = MessageType.Reply;
             }
 
+            cache?.Add(ret);
             return ret;
         }
 
@@ -654,6 +639,101 @@ namespace DSharpPlus.Net
             return ret;
         }
 
+        internal async Task<DiscordSearchResult> SearchGuildAsync(
+            ulong guild_id, string content, ulong[] authorIds, ulong[] channelIds, ulong[] mentionIds, ulong? minId, ulong? maxId, DiscordSearchFlags hasFlags, int? offset)
+        {
+            var route = $"{Endpoints.GUILDS}/:guild_id{Endpoints.MESSAGES}/search";
+            var bucket = this.Rest.GetBucket(RestRequestMethod.GET, route, new { guild_id }, out var path);
+
+            var urlParams = GetSearchUrlParams(content, authorIds, channelIds, mentionIds, minId, maxId, hasFlags, offset);
+
+            var url = Utilities.GetApiUriFor(path, BuildQueryString(urlParams));
+            var res = await this.DoRequestAsync(this.Discord, bucket, url, RestRequestMethod.GET).ConfigureAwait(false);
+            var parsed = ProcessSearchResults(res);
+
+            return parsed;
+        }
+
+        internal async Task<DiscordSearchResult> SearchChannelAsync(
+            ulong channel_id, string content, ulong[] authorIds, ulong[] channelIds, ulong[] mentionIds, ulong? minId, ulong? maxId, DiscordSearchFlags hasFlags, int? offset)
+        {
+            var route = $"{Endpoints.CHANNELS}/:channel_id{Endpoints.MESSAGES}/search";
+            var bucket = this.Rest.GetBucket(RestRequestMethod.GET, route, new { channel_id }, out var path);
+
+            var urlParams = GetSearchUrlParams(content, authorIds, channelIds, mentionIds, minId, maxId, hasFlags, offset);
+
+            var url = Utilities.GetApiUriFor(path, BuildQueryString(urlParams));
+            var res = await this.DoRequestAsync(this.Discord, bucket, url, RestRequestMethod.GET).ConfigureAwait(false);
+            var parsed = ProcessSearchResults(res);
+
+            return parsed;
+        }
+
+        private DiscordSearchResult ProcessSearchResults(RestResponse res)
+        {
+            var raw = JObject.Parse(res.Response);
+            var parsed = new DiscordSearchResult();
+
+            if (res.ResponseCode == 202)
+            {
+                // if the responce is 202 Accepted, the server or channel hasn't been indexed yet.
+                parsed.IsIndexed = false;
+            }
+            else
+            {
+                parsed.TotalResults = raw["total_results"].ToObject<int>();
+
+                var collections = new List<List<DiscordMessage>>();
+                foreach (var collection in raw["messages"].ToObject<JArray>())
+                {
+                    var messages = new List<DiscordMessage>();
+                    foreach (var rawMessage in collection)
+                        messages.Add(PrepareMessage(rawMessage, false));
+
+                    collections.Add(messages);
+                }
+
+                parsed.Messages = collections;
+            }
+
+            return parsed;
+        }
+
+        private static List<KeyValuePair<string, string>> GetSearchUrlParams(
+            string content, ulong[] authorIds, ulong[] channelIds, ulong[] mentionIds, ulong? minId, ulong? maxId, DiscordSearchFlags hasFlags, int? offset)
+        {
+            authorIds ??= Array.Empty<ulong>();
+            channelIds ??= Array.Empty<ulong>();
+            mentionIds ??= Array.Empty<ulong>();
+
+            var urlParams = new List<KeyValuePair<string, string>>();
+            if (!string.IsNullOrWhiteSpace(content))
+                urlParams.Add(new KeyValuePair<string, string>("content", content));
+
+            foreach (var id in authorIds)
+                urlParams.Add(new KeyValuePair<string, string>("author_id", id.ToString(CultureInfo.InvariantCulture)));
+
+            foreach (var id in channelIds)
+                urlParams.Add(new KeyValuePair<string, string>("channel_id", id.ToString(CultureInfo.InvariantCulture)));
+
+            foreach (var id in mentionIds)
+                urlParams.Add(new KeyValuePair<string, string>("mentions", id.ToString(CultureInfo.InvariantCulture)));
+
+            if (minId.HasValue)
+                urlParams.Add(new KeyValuePair<string, string>("min_id", minId.Value.ToString(CultureInfo.InvariantCulture)));
+
+            if (maxId.HasValue)
+                urlParams.Add(new KeyValuePair<string, string>("max_id", maxId.Value.ToString(CultureInfo.InvariantCulture)));
+
+            foreach (Enum val in Enum.GetValues(typeof(DiscordSearchFlags)))
+                if (hasFlags.HasFlag(val) && (DiscordSearchFlags)val != DiscordSearchFlags.None)
+                    urlParams.Add(new KeyValuePair<string, string>("has", val.ToString().ToLowerInvariant()));
+
+            if (offset.HasValue && offset != 0)
+                urlParams.Add(new KeyValuePair<string, string>("offset", offset.Value.ToString(CultureInfo.InvariantCulture)));
+            return urlParams;
+        }
+
         internal async Task<IReadOnlyList<DiscordChannel>> GetGuildChannelsAsync(ulong guild_id)
         {
             var route = $"{Endpoints.GUILDS}/:guild_id{Endpoints.CHANNELS}";
@@ -672,6 +752,29 @@ namespace DSharpPlus.Net
                 }
 
             return new ReadOnlyCollection<DiscordChannel>(new List<DiscordChannel>(channels_raw));
+        }
+
+        internal async Task<IReadOnlyList<DiscordMessage>> GetMentionsAsync(int limit, bool roles, bool everyone)
+        {
+            var urlparams = new Dictionary<string, string>();
+            urlparams["limit"] = limit.ToString(CultureInfo.InvariantCulture);
+            if (roles)
+                urlparams["roles"] = "true";
+            if (everyone)
+                urlparams["everyone"] = "true";
+
+            var route = $"/users/:user_id/mentions";
+            var bucket = this.Rest.GetBucket(RestRequestMethod.GET, route, new { user_id = "@me" }, out var path);
+
+            var url = Utilities.GetApiUriFor(path, urlparams.Any() ? BuildQueryString(urlparams) : "");
+            var res = await this.DoRequestAsync(this.Discord, bucket, url, RestRequestMethod.GET).ConfigureAwait(false);
+
+            var msgs_raw = JArray.Parse(res.Response);
+            var msgs = new List<DiscordMessage>();
+            foreach (var xj in msgs_raw)
+                msgs.Add(this.PrepareMessage(xj));
+
+            return new ReadOnlyCollection<DiscordMessage>(new List<DiscordMessage>(msgs));
         }
 
         internal async Task<IReadOnlyList<DiscordMessage>> GetChannelMessagesAsync(ulong channel_id, int limit, ulong? before, ulong? after, ulong? around)
@@ -725,6 +828,17 @@ namespace DSharpPlus.Net
 
             var url = Utilities.GetApiUriFor(path);
             return this.DoRequestAsync(this.Discord, bucket, url, RestRequestMethod.POST, payload: DiscordJson.SerializeObject(pld));
+        }
+
+        internal Task ModifyGuildUserSettingsAsync(DiscordUserGuildSettings settings)
+        {
+            var guild_id = settings.GuildId?.ToString() ?? "@me";
+            var route = $"{Endpoints.USERS}{Endpoints.ME}{Endpoints.GUILDS}/:guild_id/settings";
+            var bucket = this.Rest.GetBucket(RestRequestMethod.PATCH, route, new { guild_id }, out var path);
+
+            var url = Utilities.GetApiUriFor(path);
+            var payload = DiscordJson.SerializeObject(settings);
+            return this.DoRequestAsync(this.Discord, bucket, url, RestRequestMethod.PATCH, payload: payload);
         }
 
         internal async Task<DiscordMessage> EditMessageAsync(ulong channel_id, ulong message_id, Optional<string> content, Optional<DiscordEmbed> embed)

@@ -33,14 +33,33 @@ namespace DSharpPlus.Entities
         public string IconHash { get; internal set; }
 
         [JsonIgnore]
-        public bool Muted { get; set; }
+        public bool Muted
+        {
+            get
+            {
+                if (!(this.Discord is DiscordClient client))
+                    return false;
+
+                if (!client.UserGuildSettings.TryGetValue(this.Id, out var settings) || settings == null)
+                    return false;
+
+                if (settings.MuteConfig != null)
+                {
+                    var endTime = settings.MuteConfig.EndTime;
+                    if (endTime.HasValue && settings.Muted)
+                        return endTime.Value < DateTimeOffset.Now;
+                }
+
+                return settings.Muted;
+            }
+        }
 
         /// <summary>
         /// Gets the guild icon's url.
         /// </summary>
         [JsonIgnore]
         public string IconUrl
-            => !string.IsNullOrWhiteSpace(this.IconHash) ? $"https://cdn.discordapp.com/icons/{this.Id.ToString(CultureInfo.InvariantCulture)}/{IconHash}.jpg" : null;
+            => !string.IsNullOrWhiteSpace(this.IconHash) ? $"https://cdn.discordapp.com/icons/{this.Id.ToString(CultureInfo.InvariantCulture)}/{IconHash}.png" : null;
 
         /// <summary>
         /// Gets the guild splash's hash.
@@ -376,7 +395,7 @@ namespace DSharpPlus.Entities
         public bool IsSynced { get; set; }
 
         [JsonIgnore]
-        public bool Unread => Channels.Values.Any(r => r.ReadState.Unread);
+        public bool Unread => !Muted && Channels.Values.Any(r => !r.NotificationMuted && r.ReadState.Unread);
 
         [JsonIgnore]
         public int MentionCount => Channels.Values.Sum(r => r.ReadState.MentionCount);

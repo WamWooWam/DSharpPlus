@@ -120,6 +120,12 @@ namespace DSharpPlus
         /// </summary>
         public IReadOnlyDictionary<ulong, DiscordPresence> Presences => _presences;
         internal ConcurrentDictionary<ulong, DiscordPresence> _presences = new ConcurrentDictionary<ulong, DiscordPresence>();
+
+        /// <summary>
+        /// Gets the collection of user guild settings held by this client.
+        /// </summary>
+        public IReadOnlyDictionary<ulong?, DiscordUserGuildSettings> UserGuildSettings => _userGuildSettings;
+        internal ConcurrentDictionary<ulong?, DiscordUserGuildSettings> _userGuildSettings = new ConcurrentDictionary<ulong?, DiscordUserGuildSettings>();
         #endregion
 
         #region Connection semaphore
@@ -551,7 +557,8 @@ namespace DSharpPlus
         public async Task<DiscordChannel> GetChannelAsync(ulong id)
             => this.InternalGetCachedChannel(id) ?? await this.ApiClient.GetChannelAsync(id).ConfigureAwait(false);
 
-
+        public Task<IReadOnlyList<DiscordMessage>> GetMentionsAsync(int limit = 25, bool roles = true, bool everyone = true)
+            => this.ApiClient.GetMentionsAsync(limit, roles, everyone);
 
         /// <summary>
         /// Sends a message
@@ -567,6 +574,29 @@ namespace DSharpPlus
 
         public Task<DiscordDmChannel> CreateDmChannelAsync(ulong user)
             => ApiClient.CreateDmAsync(user);
+
+
+        public Task<DiscordSearchResult> SearchAsync(DiscordGuild guild,
+                                                     string content = null,
+                                                     ulong[] authorIds = null,
+                                                     ulong[] channelIds = null,
+                                                     ulong[] mentionIds = null,
+                                                     ulong? min_id = null,
+                                                     ulong? max_id = null,
+                                                     DiscordSearchFlags hasFlags = DiscordSearchFlags.None,
+                                                     int? offset = null)
+            => ApiClient.SearchGuildAsync(guild.Id, content, authorIds, channelIds, mentionIds, min_id, max_id, hasFlags, offset);
+
+        public Task<DiscordSearchResult> SearchAsync(DiscordChannel channel,
+                                                     string content = null,
+                                                     ulong[] authorIds = null,
+                                                     ulong[] channelIds = null,
+                                                     ulong[] mentionIds = null,
+                                                     ulong? min_id = null,
+                                                     ulong? max_id = null,
+                                                     DiscordSearchFlags hasFlags = DiscordSearchFlags.None,
+                                                     int? offset = null)
+            => ApiClient.SearchChannelAsync(channel.Id, content, authorIds, channelIds, mentionIds, min_id, max_id, hasFlags, offset);
 
         /// <summary>
         /// Creates a guild. This requires the bot to be in less than 10 guilds total.
@@ -725,6 +755,9 @@ namespace DSharpPlus
                 DebugLogger.LogMessage(LogLevel.Warning, "Websocket:Dispatch", $"Invalid payload body, you can probably ignore this message: {payload.OpCode}:{payload.EventName}\n{payload.Data}", DateTime.Now);
                 return;
             }
+
+            DebugLogger.LogMessage(LogLevel.Debug, "Websocket:Dispatch", $"Recieved: {payload.EventName}", DateTime.Now);
+
 
             DiscordChannel chn;
             ulong gid;
@@ -938,7 +971,10 @@ namespace DSharpPlus
 
                 case "channel_unread_update":
                     OnChannelUnreadUpdate(dat);
+                    break;
 
+                case "user_guild_settings_update":
+                    await OnUserGuildSettingsUpdated(dat).ConfigureAwait(false);
                     break;
 
                 default:
@@ -1070,6 +1106,11 @@ namespace DSharpPlus
                 this._guilds[guild.Id] = guild;
             }
 
+            foreach (var item in ready.UserGuildSettings)
+            {
+                _userGuildSettings[item.GuildId ?? default] = item;
+            }
+
             if (ready.Relationships != null)
             {
                 foreach (var relationship in ready.Relationships)
@@ -1151,6 +1192,36 @@ namespace DSharpPlus
             if (_relationships.TryRemove(rel.Id, out rel))
                 await _relationshipRemoved?.InvokeAsync(new RelationshipEventArgs() { Relationship = rel });
         }
+
+        private Task OnUserGuildSettingsUpdated(JToken json)
+        {
+            // TODO: verify if version is always higher mn
+            var rel = json.ToObject<DiscordUserGuildSettings>();
+            _userGuildSettings[rel.GuildId ?? default] = rel;
+
+            if (rel.GuildId != null && TryGetCachedGuild(rel.GuildId.Value, out var guild))
+            {
+                guild.InvokePropertyChanged("Muted");
+                guild.InvokePropertyChanged("Unread");
+
+                foreach (var channel in guild.Channels.Values)
+                {
+                    channel.InvokePropertyChanged("Muted");
+                    channel.InvokePropertyChanged("Unread");
+                }
+            }
+            else
+            {
+                foreach (var channel in PrivateChannels.Values)
+                {
+                    channel.InvokePropertyChanged("Muted");
+                    channel.InvokePropertyChanged("Unread");
+                }
+            }
+
+            return Task.CompletedTask;
+        }
+
 
         internal async Task OnChannelCreateEventAsync(DiscordChannel channel, JArray rawRecipients)
         {
@@ -1561,6 +1632,14 @@ namespace DSharpPlus
                 presence.InternalUser.Username = usr.Username;
                 presence.InternalUser.Discriminator = usr.Discriminator;
                 presence.InternalUser.AvatarHash = usr.AvatarHash;
+
+                usr.InvokePropertyChanged("Presence");
+            }
+
+            foreach (var guild in this.Guilds.Values)
+            {
+                if (guild.Members.TryGetValue(uid, out var mbr))
+                    mbr.InvokePropertyChanged("Presence");
             }
 
             var usrafter = usr ?? new DiscordUser(presence.InternalUser);
@@ -1836,6 +1915,7 @@ namespace DSharpPlus
             ReadStates[chn.Id] = state;
 
             chn.InvokePropertyChanged("ReadState");
+            chn.InvokePropertyChanged("Unread");
             chn.Guild?.InvokePropertyChanged("MentionCount");
             chn.Guild?.InvokePropertyChanged("Unread");
 
@@ -1884,7 +1964,7 @@ namespace DSharpPlus
                 Message = message,
 
                 MentionedUsers = new ReadOnlyCollection<DiscordUser>(message._mentionedUsers),
-                MentionedRoles = message._mentionedRoles != null ? new ReadOnlyCollection<DiscordRole>(message._mentionedRoles) : null,
+                //MentionedRoles = new ReadOnlyCollection<DiscordRole>(message.MentionedRoles.ToList()),
                 MentionedChannels = message._mentionedChannels != null ? new ReadOnlyCollection<DiscordChannel>(message._mentionedChannels) : null
             };
             await this._messageCreated.InvokeAsync(ea).ConfigureAwait(false);
@@ -1939,37 +2019,22 @@ namespace DSharpPlus
                 message.IsTTS = event_message.IsTTS;
             }
 
-            var mentioned_users = new List<DiscordUser>();
-            var mentioned_roles = guild != null ? new List<DiscordRole>() : null;
             var mentioned_channels = guild != null ? new List<DiscordChannel>() : null;
-
-            if (!string.IsNullOrWhiteSpace(message.Content))
+            if (guild != null && !string.IsNullOrWhiteSpace(message.Content))
             {
-                if (guild != null)
-                {
-                    mentioned_users = Utilities.GetUserMentions(message).Select(xid => guild._members.TryGetValue(xid, out var member) ? member : null).Cast<DiscordUser>().ToList();
-                    mentioned_roles = Utilities.GetRoleMentions(message).Select(xid => guild.GetRole(xid)).ToList();
-                    mentioned_channels = Utilities.GetChannelMentions(message).Select(xid => guild.GetChannel(xid)).ToList();
-                }
-                else
-                {
-                    mentioned_users = Utilities.GetUserMentions(message).Select(this.GetCachedOrEmptyUserInternal).ToList();
-                }
+                mentioned_channels = Utilities.GetChannelMentions(message).Select(xid => guild.GetChannel(xid)).ToList();
             }
 
-            message._mentionedUsers = mentioned_users;
-            message._mentionedRoles = mentioned_roles;
             message._mentionedChannels = mentioned_channels;
-
             message.InvokePropertyChanged("");
 
             var ea = new MessageUpdateEventArgs(this)
             {
                 Message = message,
                 MessageBefore = oldmsg,
-                MentionedUsers = new ReadOnlyCollection<DiscordUser>(mentioned_users),
-                MentionedRoles = mentioned_roles != null ? new ReadOnlyCollection<DiscordRole>(mentioned_roles) : null,
-                MentionedChannels = mentioned_channels != null ? new ReadOnlyCollection<DiscordChannel>(mentioned_channels) : null
+                //MentionedUsers = new ReadOnlyCollection<DiscordUser>(mentioned_users),
+                //MentionedRoles = mentioned_roles != null ? new ReadOnlyCollection<DiscordRole>(mentioned_roles) : null,
+                //MentionedChannels = mentioned_channels != null ? new ReadOnlyCollection<DiscordChannel>(mentioned_channels) : null
             };
             await this._messageUpdated.InvokeAsync(ea).ConfigureAwait(false);
         }

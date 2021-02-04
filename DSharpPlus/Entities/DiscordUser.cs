@@ -40,7 +40,7 @@ namespace DSharpPlus.Entities
         public virtual string Username
         {
             get => _username;
-            internal set => OnPropertySet(ref _username, value);
+            internal set => OnPropertySet(ref _username, value, nameof(Username), nameof(DisplayName));
         }
 
         /// <summary>
@@ -168,7 +168,7 @@ namespace DSharpPlus.Entities
         /// </summary>
         [JsonIgnore]
         public bool IsCurrent
-            => this.Id == this.Discord.CurrentUser.Id;
+            => this.Id == this.Discord?.CurrentUser.Id;
 
         /// <summary>
         /// Unbans this user from a guild.
