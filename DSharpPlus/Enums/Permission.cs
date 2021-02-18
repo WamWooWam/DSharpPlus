@@ -248,7 +248,7 @@ namespace DSharpPlus
         /// Allows the user to go live.
         /// </summary>
         [PermissionString("Allow stream")]
-        Stream	= 0x0000000000000200
+        Stream = 0x0000000000000200
     }
 
     /// <summary>

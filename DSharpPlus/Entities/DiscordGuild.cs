@@ -754,6 +754,9 @@ namespace DSharpPlus.Entities
             return $"{Net.Endpoints.BASE_URI}{Net.Endpoints.GUILDS}/{this.Id}{Net.Endpoints.WIDGET_PNG}?style={param}";
         }
 
+        public bool GetCachedMember(ulong id, out DiscordMember member) =>
+            _members.TryGetValue(id, out member);
+
         /// <summary>
         /// Gets a member of this guild by his user ID.
         /// </summary>

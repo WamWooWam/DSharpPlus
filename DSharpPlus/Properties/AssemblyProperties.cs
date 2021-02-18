@@ -9,3 +9,4 @@ using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("DSharpPlus.MSTest")]
 [assembly: InternalsVisibleTo("Unicord.Universal")]
+[assembly: InternalsVisibleTo("Unicord.WinUI3")]
