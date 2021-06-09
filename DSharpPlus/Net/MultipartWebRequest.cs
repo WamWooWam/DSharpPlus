@@ -20,7 +20,8 @@ namespace DSharpPlus.Net
         /// </summary>
         public IReadOnlyDictionary<string, Stream> Files { get; }
 
-        internal MultipartWebRequest(BaseDiscordClient client, RateLimitBucket bucket, Uri url, RestRequestMethod method, IReadOnlyDictionary<string, string> headers = null, IReadOnlyDictionary<string, string> values = null, 
+        internal MultipartWebRequest(BaseDiscordClient client, RateLimitBucket bucket, Uri url, RestRequestMethod method,
+            IReadOnlyDictionary<string, string> headers = null, IReadOnlyDictionary<string, string> values = null, 
             IReadOnlyDictionary<string, Stream> files = null, double? ratelimit_wait_override = null)
             : base(client, bucket, url, method, headers, ratelimit_wait_override)
         {

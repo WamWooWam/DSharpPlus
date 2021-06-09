@@ -30,7 +30,7 @@ namespace DSharpPlus.Entities
     
         public string GetAssetUrl()
         {
-            var extension = "";
+            string extension;
             switch (StickerType)
             {
                 case DiscordStickerType.APNG:

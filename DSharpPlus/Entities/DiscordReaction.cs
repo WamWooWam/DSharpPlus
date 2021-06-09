@@ -1,11 +1,12 @@
 ﻿using Newtonsoft.Json;
+using Unicord;
 
 namespace DSharpPlus.Entities
 {
     /// <summary>
     /// Represents a reaction to a message.
     /// </summary>
-    public class DiscordReaction
+    public class DiscordReaction : NotifyPropertyChangeImpl
     {
         /// <summary>
         /// Gets the total number of users who reacted with this emoji.

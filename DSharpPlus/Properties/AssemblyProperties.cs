@@ -10,3 +10,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("DSharpPlus.MSTest")]
 [assembly: InternalsVisibleTo("Unicord.Universal")]
 [assembly: InternalsVisibleTo("Unicord.WinUI3")]
+[assembly: InternalsVisibleTo("Unicord.Universal.Skia.Wpf")]
+[assembly: InternalsVisibleTo("Unicord.Universal.Wasm")]
+[assembly: InternalsVisibleTo("Unicord.Universal.Droid")]
+[assembly: InternalsVisibleTo("Unicord.Universal.macOS")]

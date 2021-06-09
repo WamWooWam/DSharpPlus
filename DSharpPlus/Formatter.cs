@@ -68,7 +68,7 @@ namespace DSharpPlus
         /// <param name="url">Url to prevent from being previewed.</param>
         /// <returns>Formatted url.</returns>
         public static string EmbedlessUrl(Uri url) 
-            => $"<{url.ToString()}>";
+            => $"<{url}>";
 
         /// <summary>
         /// Creates a masked link. This link will display as specified text, and alternatively provided alt text. This can only be used in embeds.

@@ -37,20 +37,22 @@ namespace DSharpPlus.Net
 
         internal RestClient(IWebProxy proxy, TimeSpan timeout) // This is for meta-clients, such as the webhook client
         {
-            var httphandler = new HttpClientHandler
-            {
-                UseCookies = false,
-                AutomaticDecompression = DecompressionMethods.Deflate | DecompressionMethods.GZip,
-                UseProxy = proxy != null,
-                Proxy = proxy
-            };
+            //var httphandler = new HttpClientHandler
+            //{
+            //    UseCookies = true,
+            //    AutomaticDecompression = DecompressionMethods.Deflate | DecompressionMethods.GZip,
 
-            this.HttpClient = new HttpClient(httphandler)
+            //    //UseProxy = proxy != null,
+            //    //Proxy = proxy
+            //};
+
+            //this.HttpClient = new HttpClient(httphandler
+            this.HttpClient = new HttpClient()
             {
                 BaseAddress = new Uri(Utilities.GetApiBaseUri()),
                 Timeout = timeout
             };
-            this.HttpClient.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", Utilities.GetUserAgent());
+            // this.HttpClient.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", Utilities.GetUserAgent());
 
             this.Buckets = new ConcurrentDictionary<string, RateLimitBucket>();
             this.GlobalRateLimitEvent = new AsyncManualResetEvent(true);

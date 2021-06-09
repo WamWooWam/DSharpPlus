@@ -94,23 +94,14 @@ namespace DSharpPlus.Entities
         /// <summary>
         /// Gets the embed's fields.
         /// </summary>
-        public IReadOnlyList<DiscordEmbedField> Fields { get; }
+        public IReadOnlyList<DiscordEmbedField> Fields => _fields;
         private readonly List<DiscordEmbedField> _fields = new List<DiscordEmbedField>();
-
-        /// <summary>
-        /// Constructs a new empty embed builder.
-        /// </summary>
-        public DiscordEmbedBuilder()
-        {
-            this.Fields = new ReadOnlyCollection<DiscordEmbedField>(this._fields);
-        }
 
         /// <summary>
         /// Constructs a new embed builder using another embed as prototype.
         /// </summary>
         /// <param name="original">Embed to use as prototype.</param>
         public DiscordEmbedBuilder(DiscordEmbed original)
-            : this()
         {
             this.Title = original.Title;
             this.Description = original.Description;

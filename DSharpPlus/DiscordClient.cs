@@ -487,7 +487,7 @@ namespace DSharpPlus
                 }
                 catch (Exception ex)
                 {
-                    this.DebugLogger.LogMessage(LogLevel.Error, "Websocket", "Socket swallowed an exception", DateTime.Now, ex);
+                    this.DebugLogger.LogMessage(LogLevel.Error, "Websocket", "Socket swallowed an exception\r\n" + ex.ToString(), DateTime.Now, ex);
                 }
             }
 
@@ -796,8 +796,8 @@ namespace DSharpPlus
                     await this.OnChannelPinsUpdate((ulong?)dat["guild_id"], this.InternalGetCachedChannel(cid), ts != null ? DateTimeOffset.Parse(ts, CultureInfo.InvariantCulture) : default(DateTimeOffset?)).ConfigureAwait(false);
                     break;
 
-                case "gift_code_update": //Not supposed to be dispatched to bots
-                    break;
+                //case "gift_code_update": //Not supposed to be dispatched to bots
+                //    break;
 
                 case "guild_create":
                     await OnGuildCreateEventAsync(dat.ToObject<DiscordGuild>(), (JArray)dat["members"], dat["presences"].ToObject<IEnumerable<DiscordPresence>>()).ConfigureAwait(false);
@@ -1642,7 +1642,7 @@ namespace DSharpPlus
                     mbr.InvokePropertyChanged("Presence");
             }
 
-            var usrafter = usr ?? new DiscordUser(presence.InternalUser);
+            var usrafter = usr ?? new DiscordUser(presence.InternalUser) { Discord = this };
             var ea = new PresenceUpdateEventArgs
             {
                 Client = this,
@@ -1940,7 +1940,7 @@ namespace DSharpPlus
                     {
                         message.Channel.ReadState.MentionCount += 1;
                         message.Channel.Guild?.InvokePropertyChanged("MentionCount");
-                    };
+                    }
                 }
                 else
                 {
@@ -2263,6 +2263,10 @@ namespace DSharpPlus
             foreach (var xtm in members)
             {
                 var mbr = new DiscordMember(xtm) { Discord = this, _guild_id = guild.Id };
+
+                var user = new DiscordUser(xtm.User) { Discord = this };
+                user = UserCache.AddOrUpdate(user.Id, user, (id, old) => Utilities.UpdateUser(old, user));
+
                 mbr = guild._members.AddOrUpdate(mbr.Id, mbr, (id, old) =>
                 {
                     Utilities.UpdateUser(old, mbr);
@@ -2283,6 +2287,7 @@ namespace DSharpPlus
                 mbr.InvokePropertyChanged("Roles");
                 mbr.InvokePropertyChanged("Color");
                 mbr.InvokePropertyChanged("ColorBrush");
+                mbr.InvokePropertyChanged("AvatarUrl");
                 mbr.InvokePropertyChanged("DisplayName");
 
                 mbrs.Add(mbr);
@@ -2345,6 +2350,7 @@ namespace DSharpPlus
             {
                 react.Count++;
                 react.IsMe |= this.CurrentUser.Id == userId;
+                react.InvokePropertyChanged("");
             }
 
             var ea = new MessageReactionAddEventArgs(this)
@@ -2387,6 +2393,7 @@ namespace DSharpPlus
             {
                 react.Count--;
                 react.IsMe &= this.CurrentUser.Id != userId;
+                react.InvokePropertyChanged("");
 
                 if (msg._reactions != null && react.Count <= 0) // shit happens
                     for (var i = 0; i < msg._reactions.Count; i++)

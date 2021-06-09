@@ -38,6 +38,9 @@ namespace DSharpPlus.Entities
         [JsonProperty("stickers", NullValueHandling = NullValueHandling.Ignore)]
         internal List<DiscordSticker> _stickers = new List<DiscordSticker>();
 
+        [JsonProperty("components", NullValueHandling = NullValueHandling.Ignore)]
+        internal DiscordComponent[] _components;
+
         public DiscordMessage()
         {
         }
@@ -184,6 +187,13 @@ namespace DSharpPlus.Entities
         public IReadOnlyList<DiscordReaction> Reactions
             => this._reactions;
 
+        /// <summary>
+        /// Gets users or members mentioned by this message.
+        /// </summary>
+        [JsonIgnore]
+        public IReadOnlyList<DiscordComponent> Components
+            => this._components;
+
         /*
         /// <summary>
         /// Gets the nonce sent with the message, if the message was sent by the client.
@@ -224,6 +234,7 @@ namespace DSharpPlus.Entities
 
         [JsonProperty("message_reference", NullValueHandling = NullValueHandling.Ignore)]
         internal InternalDiscordMessageReference? _reference { get; set; }
+
 
         /// <summary>
         /// Gets the original message reference from the crossposted message.

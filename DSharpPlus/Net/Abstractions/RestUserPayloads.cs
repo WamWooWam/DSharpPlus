@@ -5,8 +5,8 @@ namespace DSharpPlus.Net.Abstractions
 {
     internal sealed class RestUserDmCreatePayload
     {
-        [JsonProperty("recipient_id")]
-        public ulong Recipient { get; set; }
+        [JsonProperty("recipients")]
+        public ulong[] Recipients { get; set; }
     }
 
     internal sealed class RestUserGroupDmCreatePayload

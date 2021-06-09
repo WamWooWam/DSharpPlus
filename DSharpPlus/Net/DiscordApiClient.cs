@@ -63,8 +63,14 @@ namespace DSharpPlus.Net
 
             var guild = ret.Channel?.Guild;
 
+            var newUser = new DiscordUser(author) { Discord = this.Discord };
             if (!this.Discord.UserCache.TryGetValue(author.Id, out var usr))
-                this.Discord.UserCache[author.Id] = (usr = new DiscordUser(author) { Discord = this.Discord });
+                usr = this.Discord.UserCache[author.Id] = newUser;
+            else if (string.IsNullOrWhiteSpace(usr.Username) || string.IsNullOrWhiteSpace(usr.Discriminator)) // skeleton objects :HYPERS:
+            {
+                this.Discord.DebugLogger.LogMessage(LogLevel.Debug, "PrepareMessage", "Updating skeleton User object in PrepareMessage", DateTime.Now);
+                usr = this.Discord.UserCache.AddOrUpdate(author.Id, newUser, (key, old) => Utilities.UpdateUser(old, newUser));
+            }
 
             if (guild != null)
             {
@@ -1086,6 +1092,8 @@ namespace DSharpPlus.Net
 
         internal async Task<DiscordDmChannel> CreateGroupDmAsync(IEnumerable<string> access_tokens, IDictionary<ulong, string> nicks)
         {
+            throw new NotSupportedException(); // this API is really dodgy these days
+
             var pld = new RestUserGroupDmCreatePayload
             {
                 AccessTokens = access_tokens,
@@ -1106,9 +1114,11 @@ namespace DSharpPlus.Net
 
         internal async Task<DiscordDmChannel> CreateDmAsync(ulong recipient_id)
         {
+            throw new NotSupportedException(); // this API is really dodgy these days
+
             var pld = new RestUserDmCreatePayload
             {
-                Recipient = recipient_id
+                Recipients = new[] { recipient_id }
             };
 
             var route = $"{Endpoints.USERS}{Endpoints.ME}{Endpoints.CHANNELS}";
@@ -1989,7 +1999,7 @@ namespace DSharpPlus.Net
                 {
                     if (!users.ContainsKey(xtu.Id))
                     {
-                        var user = gld != null && gld.Members.TryGetValue(xtu.Id, out var member) ? member : new DiscordUser(xtu);
+                        var user = gld != null && gld.Members.TryGetValue(xtu.Id, out var member) ? member : new DiscordUser(xtu) { Discord = this.Discord }; 
                         users[user.Id] = user;
                     }
 
@@ -2018,7 +2028,7 @@ namespace DSharpPlus.Net
 
             var xtu = emoji_raw["user"]?.ToObject<TransportUser>();
             if (xtu != null)
-                emoji.User = gld != null && gld.Members.TryGetValue(xtu.Id, out var member) ? member : new DiscordUser(xtu);
+                emoji.User = gld != null && gld.Members.TryGetValue(xtu.Id, out var member) ? member : new DiscordUser(xtu) { Discord = this.Discord };
 
             return emoji;
         }
@@ -2050,7 +2060,7 @@ namespace DSharpPlus.Net
 
             var xtu = emoji_raw["user"]?.ToObject<TransportUser>();
             if (xtu != null)
-                emoji.User = gld != null && gld.Members.TryGetValue(xtu.Id, out var member) ? member : new DiscordUser(xtu);
+                emoji.User = gld != null && gld.Members.TryGetValue(xtu.Id, out var member) ? member : new DiscordUser(xtu) { Discord = this.Discord };
             else
                 emoji.User = this.Discord.CurrentUser;
 
@@ -2083,7 +2093,7 @@ namespace DSharpPlus.Net
 
             var xtu = emoji_raw["user"]?.ToObject<TransportUser>();
             if (xtu != null)
-                emoji.User = gld != null && gld.Members.TryGetValue(xtu.Id, out var member) ? member : new DiscordUser(xtu);
+                emoji.User = gld != null && gld.Members.TryGetValue(xtu.Id, out var member) ? member : new DiscordUser(xtu) { Discord = this.Discord };
 
             return emoji;
         }
