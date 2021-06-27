@@ -16,6 +16,7 @@ namespace DSharpPlus.Entities
     public class DiscordMember : DiscordUser, IEquatable<DiscordMember>
     {
         private string _nickname;
+        private string _avatarHash;
         private bool _isDeafened;
         private bool _isMuted;
 
@@ -178,8 +179,8 @@ namespace DSharpPlus.Entities
         /// </summary>
         public override string AvatarHash
         {
-            get => this.User.AvatarHash;
-            internal set => this.User.AvatarHash = value;
+            get => _avatarHash ?? this.User.AvatarHash;
+            internal set => _avatarHash = value;
         }
 
         /// <summary>

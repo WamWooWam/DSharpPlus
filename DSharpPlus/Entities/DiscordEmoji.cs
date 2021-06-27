@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
+using System.Net.Http.Headers;
 using Newtonsoft.Json;
 
 namespace DSharpPlus.Entities
@@ -49,6 +50,12 @@ namespace DSharpPlus.Entities
         public bool IsAnimated { get; internal set; }
 
         /// <summary>
+        /// Gets whether this emoji is animated.
+        /// </summary>
+        [JsonProperty("available")]
+        public bool IsAvailable { get; internal set; } = true;
+
+        /// <summary>
         /// Gets the image URL of this emoji.
         /// </summary>
         [JsonIgnore]
@@ -59,10 +66,7 @@ namespace DSharpPlus.Entities
                 if (this.Id == 0)
                     return null;
 
-                if (this.IsAnimated)
-                    return $"https://cdn.discordapp.com/emojis/{this.Id.ToString(CultureInfo.InvariantCulture)}.gif?size=32";
-
-                return $"https://cdn.discordapp.com/emojis/{this.Id.ToString(CultureInfo.InvariantCulture)}.png?size=32";
+                return $"https://cdn.discordapp.com/emojis/{this.Id.ToString(CultureInfo.InvariantCulture)}?size=128";
             }
         }
 
@@ -183,14 +187,14 @@ namespace DSharpPlus.Entities
         /// <param name="e1">First emoji to compare.</param>
         /// <param name="e2">Second emoji to compare.</param>
         /// <returns>Whether the two emoji are not equal.</returns>
-        public static bool operator !=(DiscordEmoji e1, DiscordEmoji e2) 
+        public static bool operator !=(DiscordEmoji e1, DiscordEmoji e2)
             => !(e1 == e2);
 
         /// <summary>
         /// Implicitly converts this emoji to its string representation.
         /// </summary>
         /// <param name="e1">Emoji to convert.</param>
-        public static implicit operator string(DiscordEmoji e1) 
+        public static implicit operator string(DiscordEmoji e1)
             => e1.ToString();
 
         /// <summary>
@@ -223,7 +227,7 @@ namespace DSharpPlus.Entities
         /// <param name="client"><see cref="BaseDiscordClient"/> to attach to the object.</param>
         /// <param name="id">Id of the emote.</param>
         /// <returns>Create <see cref="DiscordEmoji"/> object.</returns>
-        public static DiscordEmoji FromGuildEmote(BaseDiscordClient client, ulong id)
+        public static DiscordEmoji FromGuildEmote(BaseDiscordClient client, ulong id, string name = null)
         {
             if (client == null)
                 throw new ArgumentNullException(nameof(client), "Client cannot be null.");
@@ -233,8 +237,8 @@ namespace DSharpPlus.Entities
                 if (guild.Emojis.TryGetValue(id, out var found))
                     return found;
             }
-            
-            throw new KeyNotFoundException("Given emote was not found.");
+
+            return new DiscordEmoji() { Id = id, Name = name };
         }
 
         /// <summary>
@@ -255,7 +259,7 @@ namespace DSharpPlus.Entities
                 return new DiscordEmoji { Discord = client, Name = UnicodeEmojis[name] };
 
             var allEmojis = client.Guilds.Values.SelectMany(xg => xg.Emojis.Values).OrderBy(xe => xe.Name);
-            
+
             var ek = name.Substring(1, name.Length - 2);
             foreach (var emoji in allEmojis)
                 if (emoji.Name == ek)

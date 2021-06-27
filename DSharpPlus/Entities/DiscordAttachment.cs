@@ -43,6 +43,13 @@ namespace DSharpPlus.Entities
         [JsonProperty("width", NullValueHandling = NullValueHandling.Ignore)]
         public int Width { get; internal set; }
 
+        /// <summary>
+        /// Gets the MIME type of this attachment
+        /// </summary>
+        [JsonProperty("content_type", NullValueHandling = NullValueHandling.Ignore)]
+        public string ContentType { get; internal set; }
+
+
         internal DiscordAttachment() { }
     }
 }
