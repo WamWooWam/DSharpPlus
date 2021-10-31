@@ -312,7 +312,7 @@ namespace DSharpPlus.Entities
         /// <summary>
         /// Gets a dictionary of all the members that belong to this guild. The dictionary's key is the member ID.
         /// </summary>
-        [JsonIgnore] 
+        [JsonIgnore]
         public IReadOnlyDictionary<ulong, DiscordMember> Members => this._members;
 
         [JsonProperty("members", NullValueHandling = NullValueHandling.Ignore)]
@@ -336,7 +336,7 @@ namespace DSharpPlus.Entities
         /// </summary>
         [JsonIgnore]
         public DiscordMember CurrentMember
-            => this._members.TryGetValue(this.Discord.CurrentUser.Id, out var member) ? member : null;        
+            => this._members.TryGetValue(this.Discord.CurrentUser.Id, out var member) ? member : null;
 
         /// <summary>
         /// Gets the @everyone role for this guild.
@@ -395,7 +395,8 @@ namespace DSharpPlus.Entities
         public bool IsSynced { get; set; }
 
         [JsonIgnore]
-        public bool Unread => !Muted && Channels.Values.Any(r => !r.NotificationMuted && r.ReadState.Unread);
+        public bool Unread => !Muted && Channels.Values.Any(r =>
+            (CurrentMember.IsOwner || r.PermissionsFor(CurrentMember).HasPermission(DSharpPlus.Permissions.AccessChannels)) && !r.NotificationMuted && r.ReadState.Unread);
 
         [JsonIgnore]
         public int MentionCount
@@ -408,7 +409,7 @@ namespace DSharpPlus.Entities
         }
 
         internal DiscordGuild()
-        {        
+        {
             this._invites = new ConcurrentDictionary<string, DiscordInvite>();
         }
 
@@ -480,7 +481,7 @@ namespace DSharpPlus.Entities
             throw new InvalidOperationException("ACK can only be used when logged in as regular user.");
         }
 
-        public Task SyncAsync() 
+        public Task SyncAsync()
             => Discord is DiscordClient dc ? dc.SyncGuildsAsync(this) : Task.CompletedTask;
 
         /// <summary>
