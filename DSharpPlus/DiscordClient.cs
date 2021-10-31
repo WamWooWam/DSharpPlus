@@ -41,7 +41,7 @@ namespace DSharpPlus
         internal int _heartbeatInterval;
         internal Task _heartbeatTask;
         internal DateTimeOffset _lastHeartbeat;
-        internal long _lastSequence;
+        internal long? _lastSequence;
         internal int _skippedHeartbeats = 0;
         internal bool _guildDownloadCompleted = false;
 
@@ -447,7 +447,7 @@ namespace DSharpPlus
             this._webSocketClient.ExceptionThrown += SocketOnException;
 
             var gwuri = new QueryUriBuilder(this._gatewayUri)
-                .AddParameter("v", "6")
+                .AddParameter("v", "9")
                 .AddParameter("encoding", "json");
 
             if (this.Configuration.GatewayCompressionLevel == GatewayCompressionLevel.Stream)
@@ -758,6 +758,7 @@ namespace DSharpPlus
 
             DebugLogger.LogMessage(LogLevel.Debug, "Websocket:Dispatch", $"Recieved: {payload.EventName}", DateTime.Now);
 
+            this._lastSequence = payload.Sequence;
 
             DiscordChannel chn;
             ulong gid;
@@ -1022,7 +1023,6 @@ namespace DSharpPlus
             foreach (var rawChannel in rawDmChannels)
             {
                 var channel = rawChannel.ToObject<DiscordDmChannel>();
-
                 channel.Discord = this;
 
                 //xdc._recipients = 
@@ -1635,6 +1635,11 @@ namespace DSharpPlus
 
                 usr.InvokePropertyChanged("Presence");
             }
+            else
+            {
+                usr = new DiscordUser(presence.InternalUser) { Discord = this };
+                UserCache[usr.Id] = usr;
+            }
 
             foreach (var guild in this.Guilds.Values)
             {
@@ -1642,7 +1647,6 @@ namespace DSharpPlus
                     mbr.InvokePropertyChanged("Presence");
             }
 
-            var usrafter = usr ?? new DiscordUser(presence.InternalUser) { Discord = this };
             var ea = new PresenceUpdateEventArgs
             {
                 Client = this,
@@ -1651,8 +1655,8 @@ namespace DSharpPlus
                 User = usr,
                 PresenceBefore = old,
                 PresenceAfter = presence,
-                UserBefore = old != null ? new DiscordUser(old.InternalUser) : usrafter,
-                UserAfter = usrafter
+                UserBefore = old != null ? new DiscordUser(old.InternalUser) : usr,
+                UserAfter = usr
             };
             await this._presenceUpdated.InvokeAsync(ea).ConfigureAwait(false);
         }
@@ -1888,6 +1892,8 @@ namespace DSharpPlus
 
         internal async Task OnMessageAckEventAsync(DiscordChannel chn, ulong messageId)
         {
+            if (chn == null) return;
+
             DiscordMessage msg = null;
             if (this.MessageCache?.TryGet(xm => xm.Id == messageId && xm.ChannelId == chn.Id, out msg) != true)
                 msg = new DiscordMessage
@@ -1928,7 +1934,10 @@ namespace DSharpPlus
             message.Discord = this;
 
             if (message.Channel == null)
+            {
                 this.DebugLogger.LogMessage(LogLevel.Warning, "Event", "Could not find channel last message belonged to.", DateTime.Now);
+                return;
+            }
             else
                 message.Channel.LastMessageId = message.Id;
 
@@ -2495,7 +2504,7 @@ namespace DSharpPlus
         internal async Task OnHeartbeatAsync(long seq)
         {
             this.DebugLogger.LogMessage(LogLevel.Debug, "Websocket", "Received Heartbeat - Sending Ack.", DateTime.Now);
-            await SendHeartbeatAsync(seq).ConfigureAwait(false);
+            await SendHeartbeatAsync().ConfigureAwait(false);
         }
 
         internal async Task OnReconnectAsync()
@@ -2635,15 +2644,15 @@ namespace DSharpPlus
             }
         }
 
-        internal Task SendHeartbeatAsync()
-        {
-            var _last_heartbeat = DateTimeOffset.Now;
-            var _sequence = (long)(_last_heartbeat - DiscordEpoch).TotalMilliseconds;
+        //internal Task SendHeartbeatAsync()
+        //{
+        //    var _last_heartbeat = DateTimeOffset.Now;
+        //    var _sequence = (long)(_last_heartbeat - DiscordEpoch).TotalMilliseconds;
 
-            return this.SendHeartbeatAsync(_sequence);
-        }
+        //    return this.SendHeartbeatAsync(_sequence);
+        //}
 
-        internal async Task SendHeartbeatAsync(long seq)
+        internal async Task SendHeartbeatAsync()
         {
             var more_than_5 = Volatile.Read(ref this._skippedHeartbeats) > 5;
             var guilds_comp = Volatile.Read(ref this._guildDownloadCompleted);
@@ -2658,12 +2667,12 @@ namespace DSharpPlus
                 this.DebugLogger.LogMessage(LogLevel.Warning, "DSharpPlus", "More than 5 heartbeats were skipped while the guild download is running.", DateTime.Now);
             }
 
-            Volatile.Write(ref this._lastSequence, seq);
+            //Volatile.Write(ref this._lastSequence, seq);
             this.DebugLogger.LogMessage(LogLevel.Debug, "Websocket", "Sending Heartbeat.", DateTime.Now);
             var heartbeat = new GatewayPayload
             {
                 OpCode = GatewayOpCode.Heartbeat,
-                Data = seq
+                Data = this._lastSequence
             };
             var heartbeat_str = JsonConvert.SerializeObject(heartbeat);
             await this._webSocketClient.SendMessageAsync(heartbeat_str).ConfigureAwait(false);
@@ -2702,15 +2711,21 @@ namespace DSharpPlus
             {
                 Token = Utilities.GetFormattedToken(this),
                 SessionId = this._sessionId,
-                SequenceNumber = Volatile.Read(ref this._lastSequence)
+                SequenceNumber = this._lastSequence.GetValueOrDefault()
             };
             var resume_payload = new GatewayPayload
             {
                 OpCode = GatewayOpCode.Resume,
                 Data = resume
             };
-            var resumestr = JsonConvert.SerializeObject(resume_payload);
 
+            long? x = resume?.SequenceNumber;
+            if (x == null)
+            {
+            }
+            
+
+            var resumestr = JsonConvert.SerializeObject(resume_payload);
             await this._webSocketClient.SendMessageAsync(resumestr).ConfigureAwait(false);
         }
         #endregion

@@ -45,7 +45,10 @@ namespace DSharpPlus.Entities
         }
 
         [JsonProperty("mention_count")]
-        public int MentionCount { get => _mentionCount; internal set => OnPropertySet(ref _mentionCount, value, nameof(MentionCount), nameof(Unread)); }
+        public int MentionCount { get => _mentionCount; internal set => OnPropertySet(ref _mentionCount, value, nameof(MentionCount), nameof(NullableMentionCount), nameof(Unread)); }
+
+        [JsonIgnore]
+        public int NullableMentionCount => MentionCount == 0 ? -1 : MentionCount;
 
         [JsonProperty("last_message_id")]
         public ulong LastMessageId { get => _lastMessageId; internal set => OnPropertySet(ref _lastMessageId, value, nameof(LastMessageId), nameof(Unread)); }

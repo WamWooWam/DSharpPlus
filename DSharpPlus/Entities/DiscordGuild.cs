@@ -398,7 +398,14 @@ namespace DSharpPlus.Entities
         public bool Unread => !Muted && Channels.Values.Any(r => !r.NotificationMuted && r.ReadState.Unread);
 
         [JsonIgnore]
-        public int MentionCount => Channels.Values.Sum(r => r.ReadState.MentionCount);
+        public int MentionCount
+        {
+            get
+            {
+                var v = Channels.Values.Sum(r => r.ReadState.MentionCount);
+                return v == 0 ? -1 : v;
+            }
+        }
 
         internal DiscordGuild()
         {        

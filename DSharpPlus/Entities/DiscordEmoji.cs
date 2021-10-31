@@ -78,14 +78,17 @@ namespace DSharpPlus.Entities
         /// <summary>
         /// Gets emoji's name in non-Unicode format (eg. :thinking: instead of the Unicode representation of the emoji).
         /// </summary>
-        public string GetDiscordName()
+        public string DiscordName
         {
-            DiscordNameLookup.TryGetValue(this.Name, out var name);
+            get
+            {
+                DiscordNameLookup.TryGetValue(this.Name, out var name);
 
-            if (name == null)
-                return $":{ this.Name }:";
+                if (name == null)
+                    return $":{ this.Name }:";
 
-            return name;
+                return name;
+            }
         }
 
         public string GetSearchName()
