@@ -2,7 +2,12 @@
 
 namespace DSharpPlus.EventArgs
 {
-    public class RelationshipEventArgs : AsyncEventArgs
+    public class RelationshipAddedEventArgs : AsyncEventArgs
+    {
+        public DiscordRelationship Relationship { get; internal set; }
+    }
+
+    public class RelationshipRemovedEventArgs : AsyncEventArgs
     {
         public DiscordRelationship Relationship { get; internal set; }
     }

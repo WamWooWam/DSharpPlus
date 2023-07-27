@@ -9,7 +9,7 @@ using Unicord;
 
 namespace DSharpPlus.Entities
 {
-    public class DiscordRelationship : NotifyPropertyChangeImpl, IComparable
+    public class DiscordRelationship : NotifyPropertyChangeImpl, IComparable<DiscordRelationship>
     {
         private DiscordRelationshipType _relationshipType;
 
@@ -35,6 +35,11 @@ namespace DSharpPlus.Entities
         [JsonProperty("type")]
         public DiscordRelationshipType RelationshipType { get => _relationshipType; internal set => OnPropertySet(ref _relationshipType, value); }
 
-        int IComparable.CompareTo(object obj) => (InternalUser?.Username as IComparable).CompareTo(obj is DiscordRelationship r ? r.InternalUser?.Username : obj);
+        //int IComparable.CompareTo(object obj) => (InternalUser?.Username as IComparable).CompareTo(obj is DiscordRelationship r ? r.InternalUser?.Username : obj);
+
+        public int CompareTo(DiscordRelationship other)
+        {
+            return InternalUser?.Username.CompareTo(other.InternalUser?.Username) ?? 0;
+        }
     }
 }

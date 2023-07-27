@@ -154,7 +154,7 @@ namespace DSharpPlus
             this._socketOpened = new AsyncEvent(this.EventErrorHandler, "SOCKET_OPENED");
             this._socketClosed = new AsyncEvent<SocketCloseEventArgs>(this.EventErrorHandler, "SOCKET_CLOSED");
             this._ready = new AsyncEvent<ReadyEventArgs>(this.EventErrorHandler, "READY");
-            this._resumed = new AsyncEvent<ReadyEventArgs>(this.EventErrorHandler, "RESUMED");
+            this._resumed = new AsyncEvent<ResumedEventArgs>(this.EventErrorHandler, "RESUMED");
             this._channelCreated = new AsyncEvent<ChannelCreateEventArgs>(this.EventErrorHandler, "CHANNEL_CREATED");
             this._dmChannelCreated = new AsyncEvent<DmChannelCreateEventArgs>(this.EventErrorHandler, "DM_CHANNEL_CREATED");
             this._channelUpdated = new AsyncEvent<ChannelUpdateEventArgs>(this.EventErrorHandler, "CHANNEL_UPDATED");
@@ -199,8 +199,8 @@ namespace DSharpPlus
             this._webhooksUpdated = new AsyncEvent<WebhooksUpdateEventArgs>(this.EventErrorHandler, "WEBHOOKS_UPDATED");
             this._heartbeated = new AsyncEvent<HeartbeatEventArgs>(this.EventErrorHandler, "HEARTBEATED");
 
-            this._relationshipAdded = new AsyncEvent<RelationshipEventArgs>(EventErrorHandler, "RELATIONSHIP_ADD");
-            this._relationshipRemoved = new AsyncEvent<RelationshipEventArgs>(EventErrorHandler, "RElATIONSHIP_REMOVE");
+            this._relationshipAdded = new AsyncEvent<RelationshipAddedEventArgs>(EventErrorHandler, "RELATIONSHIP_ADD");
+            this._relationshipRemoved = new AsyncEvent<RelationshipRemovedEventArgs>(EventErrorHandler, "RElATIONSHIP_REMOVE");
             this._loggedOut = new AsyncEvent(EventErrorHandler, "LOGGED_OUT");
 
             this._guilds.Clear();
@@ -1163,7 +1163,7 @@ namespace DSharpPlus
         internal Task OnResumedAsync()
         {
             this.DebugLogger.LogMessage(LogLevel.Info, "DSharpPlus", "Session resumed.", DateTime.Now);
-            return this._resumed.InvokeAsync(new ReadyEventArgs(this));
+            return this._resumed.InvokeAsync(new ResumedEventArgs(this));
         }
 
         private async Task OnRelationshipAddAsync(JToken json)
@@ -1182,7 +1182,7 @@ namespace DSharpPlus
                 _relationships[rel.Id] = rel;
             }
 
-            await _relationshipAdded?.InvokeAsync(new RelationshipEventArgs() { Relationship = rel });
+            await _relationshipAdded?.InvokeAsync(new RelationshipAddedEventArgs() { Relationship = rel });
         }
 
         private async Task OnRelationshipRemoveAsync(JToken json)
@@ -1190,7 +1190,7 @@ namespace DSharpPlus
             var rel = json.ToObject<DiscordRelationship>();
 
             if (_relationships.TryRemove(rel.Id, out rel))
-                await _relationshipRemoved?.InvokeAsync(new RelationshipEventArgs() { Relationship = rel });
+                await _relationshipRemoved?.InvokeAsync(new RelationshipRemovedEventArgs() { Relationship = rel });
         }
 
         private Task OnUserGuildSettingsUpdated(JToken json)
@@ -2109,6 +2109,25 @@ namespace DSharpPlus
             await this._messagesBulkDeleted.InvokeAsync(ea).ConfigureAwait(false);
         }
 
+        internal async Task RequestUserPresencesAsync(DiscordGuild discordGuild, IEnumerable<ulong> usersToSync)
+        {
+            var request = new GatewayPayload
+            {
+                OpCode = GatewayOpCode.RequestGuildMembers,
+                Data = new JObject()
+                {
+                    ["guild_id"] = new JArray() { discordGuild.Id.ToString() },
+                    ["user_ids"] = new JArray(usersToSync)
+                }
+            };
+
+            System.Diagnostics.Trace.WriteLine($"Requesting {usersToSync.Count()} members");
+
+            var guild_syncstr = JsonConvert.SerializeObject(request);
+            await _webSocketClient.SendMessageAsync(guild_syncstr);
+        }
+
+
         internal async Task RequestUserPresencesAsync(DiscordGuild discordGuild, IEnumerable<DiscordUser> usersToSync)
         {
             var request = new GatewayPayload
@@ -2751,6 +2770,14 @@ namespace DSharpPlus
             return null;
         }
 
+        internal DiscordUser InternalGetCachedUser(ulong userId)
+        {
+            if (this.UserCache.TryGetValue(userId, out var foundUser))
+                return foundUser;
+
+            return null;
+        }
+
         internal void UpdateCachedGuild(DiscordGuild newGuild, JArray rawMembers)
         {
             if (!this._guilds.ContainsKey(newGuild.Id))
@@ -2980,12 +3007,12 @@ namespace DSharpPlus
         /// <summary>
         /// Fired whenever a session is resumed.
         /// </summary>
-        public event AsyncEventHandler<ReadyEventArgs> Resumed
+        public event AsyncEventHandler<ResumedEventArgs> Resumed
         {
             add => this._resumed.Register(value);
             remove => this._resumed.Unregister(value);
         }
-        private AsyncEvent<ReadyEventArgs> _resumed;
+        private AsyncEvent<ResumedEventArgs> _resumed;
 
         /// <summary>
         /// Fired when a new channel is created.
@@ -3423,22 +3450,22 @@ namespace DSharpPlus
         /// <summary>
         /// Fired when a relationship is added (block/pending request)
         /// </summary>
-        public event AsyncEventHandler<RelationshipEventArgs> RelationshipAdded
+        public event AsyncEventHandler<RelationshipAddedEventArgs> RelationshipAdded
         {
             add { _relationshipAdded.Register(value); }
             remove { _relationshipAdded.Unregister(value); }
         }
-        private AsyncEvent<RelationshipEventArgs> _relationshipAdded;
+        private AsyncEvent<RelationshipAddedEventArgs> _relationshipAdded;
 
         /// <summary>
         /// Fired when a relationship is removed (unfriend)
         /// </summary>
-        public event AsyncEventHandler<RelationshipEventArgs> RelationshipRemoved
+        public event AsyncEventHandler<RelationshipRemovedEventArgs> RelationshipRemoved
         {
             add { _relationshipRemoved.Register(value); }
             remove { _relationshipRemoved.Unregister(value); }
         }
-        private AsyncEvent<RelationshipEventArgs> _relationshipRemoved;
+        private AsyncEvent<RelationshipRemovedEventArgs> _relationshipRemoved;
 
         /// <summary>
         /// Fired when you log out

@@ -12,6 +12,10 @@
         /// <summary>
         /// Includes app perks as well as the games subscription service.
         /// </summary>
-        Nitro = 2
+        Nitro = 2,
+        /// <summary>
+        /// 
+        /// </summary>
+        NitroBasic = 3,
     }
 }

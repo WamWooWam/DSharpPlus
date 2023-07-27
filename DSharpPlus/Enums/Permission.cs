@@ -248,7 +248,13 @@ namespace DSharpPlus
         /// Allows the user to go live.
         /// </summary>
         [PermissionString("Allow stream")]
-        Stream = 0x0000000000000200
+        Stream = 0x0000000000000200,
+
+        /// <summary>
+        /// Allows the user to manage threads
+        /// </summary>
+        [PermissionString("Manage threads")]
+        ManageThreads = 0x0000000400000000,
     }
 
     /// <summary>

@@ -72,12 +72,12 @@ namespace DSharpPlus
         /// <summary>
         /// Fired whenever a session is resumed.
         /// </summary>
-        public event AsyncEventHandler<ReadyEventArgs> Resumed
+        public event AsyncEventHandler<ResumedEventArgs> Resumed
         {
             add => this._resumed.Register(value);
             remove => this._resumed.Unregister(value);
         }
-        private AsyncEvent<ReadyEventArgs> _resumed;
+        private AsyncEvent<ResumedEventArgs> _resumed;
 
         /// <summary>
         /// Fired when a new channel is created.
@@ -563,7 +563,7 @@ namespace DSharpPlus
             this._socketOpened = new AsyncEvent(this.EventErrorHandler, "SOCKET_OPENED");
             this._socketClosed = new AsyncEvent<SocketCloseEventArgs>(this.EventErrorHandler, "SOCKET_CLOSED");
             this._ready = new AsyncEvent<ReadyEventArgs>(this.EventErrorHandler, "READY");
-            this._resumed = new AsyncEvent<ReadyEventArgs>(this.EventErrorHandler, "RESUMED");
+            this._resumed = new AsyncEvent<ResumedEventArgs>(this.EventErrorHandler, "RESUMED");
             this._channelCreated = new AsyncEvent<ChannelCreateEventArgs>(this.EventErrorHandler, "CHANNEL_CREATED");
             this._dmChannelCreated = new AsyncEvent<DmChannelCreateEventArgs>(this.EventErrorHandler, "DM_CHANNEL_CREATED");
             this._channelUpdated = new AsyncEvent<ChannelUpdateEventArgs>(this.EventErrorHandler, "CHANNEL_UPDATED");
@@ -778,7 +778,7 @@ namespace DSharpPlus
         private Task Client_Ready(ReadyEventArgs e) 
             => this._ready.InvokeAsync(e);
 
-        private Task Client_Resumed(ReadyEventArgs e) 
+        private Task Client_Resumed(ResumedEventArgs e) 
             => this._resumed.InvokeAsync(e);
 
         private Task Client_ChannelCreated(ChannelCreateEventArgs e) 

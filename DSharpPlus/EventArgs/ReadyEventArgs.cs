@@ -7,4 +7,9 @@
     {
         internal ReadyEventArgs(DiscordClient client) : base(client) { }
     }
+
+    public sealed class ResumedEventArgs : DiscordEventArgs
+    {
+        internal ResumedEventArgs(DiscordClient client) : base(client) { }
+    }
 }
