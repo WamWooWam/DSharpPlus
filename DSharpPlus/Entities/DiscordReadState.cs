@@ -7,7 +7,7 @@ namespace DSharpPlus.Entities
     {
         private int _mentionCount;
         private ulong _lastMessageId;
-        private DateTimeOffset _lastPinTimestamp;
+        private DateTimeOffset? _lastPinTimestamp;
 
         [JsonIgnore]
         public bool Unread
@@ -54,6 +54,6 @@ namespace DSharpPlus.Entities
         public ulong LastMessageId { get => _lastMessageId; internal set => OnPropertySet(ref _lastMessageId, value, nameof(LastMessageId), nameof(Unread)); }
 
         [JsonProperty("last_pin_timestamp")]
-        public DateTimeOffset LastPinTimestamp { get => _lastPinTimestamp; internal set => OnPropertySet(ref _lastPinTimestamp, value); }
+        public DateTimeOffset? LastPinTimestamp { get => _lastPinTimestamp; internal set => OnPropertySet(ref _lastPinTimestamp, value); }
     }
 }
