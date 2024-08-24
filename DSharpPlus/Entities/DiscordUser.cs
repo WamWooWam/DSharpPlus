@@ -14,6 +14,7 @@ namespace DSharpPlus.Entities
         private string _username;
         private string _discriminator;
         private string _avatarHash;
+        private string _globalName;
 
         internal DiscordUser() { }
         internal DiscordUser(TransportUser transport)
@@ -31,6 +32,7 @@ namespace DSharpPlus.Entities
             this.Locale = transport.Locale;
             this.Flags = transport.Flags;
             this.OAuthFlags = transport.OAuthFlags;
+            this.GlobalName = transport.GlobalName;
         }
 
         /// <summary>
@@ -67,11 +69,18 @@ namespace DSharpPlus.Entities
             internal set => OnPropertySet(ref _avatarHash, value, nameof(AvatarHash), nameof(AvatarUrl), nameof(NonAnimatedAvatarUrl));
         }
 
+        [JsonProperty("global_name", NullValueHandling = NullValueHandling.Ignore)]
+        public string GlobalName
+        {
+            get => _globalName;
+            internal set => OnPropertySet(ref _globalName, value, nameof(GlobalName), "DisplayName");
+        }
+
         /// <summary>
         /// Gets the displayable name of a user.
         /// </summary>
         [JsonIgnore]
-        public virtual string DisplayName => Username;
+        public virtual string DisplayName => GlobalName ?? Username;
 
         /// <summary>
         /// Gets the displayable name of a user.

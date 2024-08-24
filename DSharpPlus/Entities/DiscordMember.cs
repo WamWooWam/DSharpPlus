@@ -233,20 +233,20 @@ namespace DSharpPlus.Entities
         /// <summary>
         /// Gets the user's flags.
         /// </summary>
-        public override UserFlags? OAuthFlags
-        {
-            get => this.User.OAuthFlags;
-            internal set => this.User.OAuthFlags = value;
-        }
+        //public override UserFlags? OAuthFlags
+        //{
+        //    get => this.User.OAuthFlags;
+        //    internal set => this.User.OAuthFlags = value;
+        //}
 
         /// <summary>
         /// Gets the member's flags for OAuth.
         /// </summary>
-        public override UserFlags? Flags
-        {
-            get => this.User.Flags;
-            internal set => this.User.Flags = value;
-        }
+        //public override UserFlags? Flags
+        //{
+        //    get => this.User.Flags;
+        //    internal set => this.User.Flags = value;
+        //}
         #endregion
 
         /// <summary>
