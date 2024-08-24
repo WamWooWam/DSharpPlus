@@ -7,7 +7,7 @@ namespace DSharpPlus.Entities
     /// <summary>
     /// Represents an object in Discord API.
     /// </summary>
-    public abstract class SnowflakeObject : NotifyPropertyChangeImpl
+    public abstract class SnowflakeObject
     {
         /// <summary>
         /// Gets the ID of this object.

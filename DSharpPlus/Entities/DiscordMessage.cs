@@ -15,11 +15,6 @@ namespace DSharpPlus.Entities
     /// </summary>
     public class DiscordMessage : SnowflakeObject, IEquatable<DiscordMessage>
     {
-        private string _content;
-        private string _editedTimestampRaw;
-        private bool _pinned;
-        private MessageType? _messageType;
-
         [JsonIgnore]
         internal List<DiscordChannel> _mentionedChannels;
 
@@ -96,7 +91,7 @@ namespace DSharpPlus.Entities
         /// Gets the message's content.
         /// </summary>
         [JsonProperty("content", NullValueHandling = NullValueHandling.Ignore)]
-        public virtual string Content { get => _content; internal set => OnPropertySet(ref _content, value); }
+        public virtual string Content { get; internal set; }
 
         /// <summary>
         /// Gets the message's creation timestamp.
@@ -118,11 +113,7 @@ namespace DSharpPlus.Entities
                 (DateTimeOffset?)dto : null;
 
         [JsonProperty("edited_timestamp", NullValueHandling = NullValueHandling.Ignore)]
-        internal string EditedTimestampRaw
-        {
-            get => _editedTimestampRaw;
-            set => OnPropertySet(ref _editedTimestampRaw, value, nameof(EditedTimestamp), nameof(IsEdited));
-        }
+        internal string EditedTimestampRaw { get; set; }
 
         /// <summary>
         /// Gets whether this message was edited.
@@ -206,7 +197,7 @@ namespace DSharpPlus.Entities
         /// Gets whether the message is pinned.
         /// </summary>
         [JsonProperty("pinned", NullValueHandling = NullValueHandling.Ignore)]
-        public bool Pinned { get => _pinned; internal set => OnPropertySet(ref _pinned, value); }
+        public bool Pinned { get; internal set; }
 
         /// <summary>
         /// Gets the id of the webhook that generated this message.
@@ -218,7 +209,7 @@ namespace DSharpPlus.Entities
         /// Gets the type of the message.
         /// </summary>
         [JsonProperty("type", NullValueHandling = NullValueHandling.Ignore)]
-        public MessageType? MessageType { get => _messageType; internal set => OnPropertySet(ref _messageType, value); }
+        public MessageType? MessageType { get; internal set; }
 
         /// <summary>
         /// Gets the message activity in the Rich Presence embed.

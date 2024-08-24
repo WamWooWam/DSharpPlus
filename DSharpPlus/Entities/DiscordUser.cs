@@ -14,6 +14,7 @@ namespace DSharpPlus.Entities
         private string _username;
         private string _discriminator;
         private string _avatarHash;
+        private string _globalName;
 
         internal DiscordUser() { }
         internal DiscordUser(TransportUser transport)
@@ -31,27 +32,20 @@ namespace DSharpPlus.Entities
             this.Locale = transport.Locale;
             this.Flags = transport.Flags;
             this.OAuthFlags = transport.OAuthFlags;
+            this.GlobalName = transport.GlobalName;
         }
 
         /// <summary>
         /// Gets this user's username.
         /// </summary>
         [JsonProperty("username", NullValueHandling = NullValueHandling.Ignore)]
-        public virtual string Username
-        {
-            get => _username;
-            internal set => OnPropertySet(ref _username, value, nameof(Username), nameof(DisplayName));
-        }
+        public virtual string Username { get; internal set; }
 
         /// <summary>
         /// Gets the user's 4-digit discriminator.
         /// </summary>
         [JsonProperty("discriminator", NullValueHandling = NullValueHandling.Ignore)]
-        public virtual string Discriminator
-        {
-            get => _discriminator;
-            internal set => OnPropertySet(ref _discriminator, value, nameof(Discriminator), nameof(DiscriminatorInt));
-        }
+        public virtual string Discriminator { get; internal set; }
 
         [JsonIgnore]
         internal int DiscriminatorInt
@@ -61,17 +55,16 @@ namespace DSharpPlus.Entities
         /// Gets the user's avatar hash.
         /// </summary>
         [JsonProperty("avatar", NullValueHandling = NullValueHandling.Ignore)]
-        public virtual string AvatarHash
-        {
-            get => _avatarHash;
-            internal set => OnPropertySet(ref _avatarHash, value, nameof(AvatarHash), nameof(AvatarUrl), nameof(NonAnimatedAvatarUrl));
-        }
+        public virtual string AvatarHash { get; internal set; }
 
         /// <summary>
         /// Gets the displayable name of a user.
         /// </summary>
-        [JsonIgnore]
-        public virtual string DisplayName => Username;
+        [JsonProperty("global_name", NullValueHandling = NullValueHandling.Ignore)]
+        public virtual string GlobalName { get; internal set; }
+
+        public virtual string DisplayName
+            => string.IsNullOrEmpty(this.GlobalName) ? this.Username : this.GlobalName;
 
         /// <summary>
         /// Gets the displayable name of a user.

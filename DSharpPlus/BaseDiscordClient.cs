@@ -12,7 +12,7 @@ using Unicord;
 
 namespace DSharpPlus
 {
-    public abstract class BaseDiscordClient : NotifyPropertyChangeImpl, IDisposable
+    public abstract class BaseDiscordClient : IDisposable
     {
         public DiscordApiClient ApiClient { get; }
         internal protected DiscordConfiguration Configuration { get; }

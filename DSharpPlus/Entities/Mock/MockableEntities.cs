@@ -52,12 +52,7 @@ namespace DSharpPlus.Entities.Mock
         public override DateTimeOffset Timestamp { get; }
 
         internal void NotifyAllChanged()
-        {
-            InvokePropertyChanged("");
-            InvokePropertyChanged(nameof(Author));
-            InvokePropertyChanged(nameof(Content));
-            InvokePropertyChanged(nameof(Channel));
-            InvokePropertyChanged(nameof(Timestamp));
+        {;
         }
     }
 }

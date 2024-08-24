@@ -15,14 +15,6 @@ namespace DSharpPlus.Entities
     /// </summary>
     public class DiscordChannel : SnowflakeObject, IEquatable<DiscordChannel>, IComparable<DiscordChannel>
     {
-        private string _name;
-        private int _position;
-        private ulong? _parentId;
-        private string _topic = "";
-        private int _bitrate;
-        private int _userLimit;
-        private int? _perUserRateLimit;
-        private bool _isNSFW;
         private ulong _lastMessageId = 0;
 
         [JsonProperty("permission_overwrites", NullValueHandling = NullValueHandling.Ignore)]
@@ -38,7 +30,7 @@ namespace DSharpPlus.Entities
         /// Gets ID of the category that contains this channel.
         /// </summary>
         [JsonProperty("parent_id", NullValueHandling = NullValueHandling.Include)]
-        public ulong? ParentId { get => _parentId; internal set => OnPropertySet(ref _parentId, value, nameof(Parent)); } // lets fucking go
+        public ulong? ParentId { get; internal set; } // lets fucking go
 
         /// <summary>
         /// Gets the category that contains this channel.
@@ -51,7 +43,7 @@ namespace DSharpPlus.Entities
         /// Gets the name of this channel.
         /// </summary>
         [JsonProperty("name", NullValueHandling = NullValueHandling.Ignore)]
-        public virtual string Name { get => _name; internal set => OnPropertySet(ref _name, value); }
+        public virtual string Name { get; internal set; }
 
         /// <summary>
         /// Gets the type of this channel.
@@ -63,7 +55,7 @@ namespace DSharpPlus.Entities
         /// Gets the position of this channel.
         /// </summary>
         [JsonProperty("position", NullValueHandling = NullValueHandling.Ignore)]
-        public int Position { get => _position; internal set => OnPropertySet(ref _position, value); }
+        public int Position { get; internal set; }
 
         /// <summary>
         /// Gets whether this channel is a DM channel.
@@ -97,32 +89,32 @@ namespace DSharpPlus.Entities
         /// Gets the channel's topic. This is applicable to text channels only.
         /// </summary>
         [JsonProperty("topic", NullValueHandling = NullValueHandling.Ignore)]
-        public virtual string Topic { get => _topic; internal set => OnPropertySet(ref _topic, value); }
+        public virtual string Topic { get; internal set; }
 
         /// <summary>
         /// Gets the ID of the last message sent in this channel. This is applicable to text channels only.
         /// </summary>
         [JsonProperty("last_message_id", NullValueHandling = NullValueHandling.Ignore)]
-        public ulong LastMessageId { get => _lastMessageId; internal set => OnPropertySet(ref _lastMessageId, value); }
+        public ulong LastMessageId { get; internal set; }
 
         /// <summary>
         /// Gets this channel's bitrate. This is applicable to voice channels only.
         /// </summary>
         [JsonProperty("bitrate", NullValueHandling = NullValueHandling.Ignore)]
-        public int Bitrate { get => _bitrate; internal set => OnPropertySet(ref _bitrate, value); }
+        public int Bitrate { get; internal set; }
 
         /// <summary>
         /// Gets this channel's user limit. This is applicable to voice channels only.
         /// </summary>
         [JsonProperty("user_limit", NullValueHandling = NullValueHandling.Ignore)]
-        public int UserLimit { get => _userLimit; internal set => OnPropertySet(ref _userLimit, value); }
+        public int UserLimit { get; internal set; }
 
         /// <summary>
         /// <para>Gets the slow mode delay configured for this channel.</para>
         /// <para>All bots, as well as users with <see cref="Permissions.ManageChannels"/> or <see cref="Permissions.ManageMessages"/> permissions in the channel are exempt from slow mode.</para>
         /// </summary>
         [JsonProperty("rate_limit_per_user")]
-        public int? PerUserRateLimit { get => _perUserRateLimit; internal set => OnPropertySet(ref _perUserRateLimit, value); }
+        public int? PerUserRateLimit { get; internal set; }
 
         /// <summary>
         /// Gets this channel's mention string.
@@ -168,49 +160,49 @@ namespace DSharpPlus.Entities
         /// Gets whether this channel is an NSFW channel.
         /// </summary>
         [JsonProperty("nsfw")]
-        public bool IsNSFW { get => _isNSFW; internal set => OnPropertySet(ref _isNSFW, value); }
+        public bool IsNSFW { get; internal set; }
 
-        [JsonIgnore]
-        public bool Muted
-        {
-            get
-            {
-                if (!(this.Discord is DiscordClient client))
-                    return false;
+        //[JsonIgnore]
+        //public bool Muted
+        //{
+        //    get
+        //    {
+        //        if (!(this.Discord is DiscordClient client))
+        //            return false;
 
-                if (!client.UserGuildSettings.TryGetValue(this.GuildId, out var settings))
-                    return false;
+        //        if (!client.UserGuildSettings.TryGetValue(this.GuildId, out var settings))
+        //            return false;
 
-                var channelOverride = settings.ChannelOverrides?.FirstOrDefault(o => o?.ChannelId == this.Id);
-                if (channelOverride == null)
-                    return false;
+        //        var channelOverride = settings.ChannelOverrides?.FirstOrDefault(o => o?.ChannelId == this.Id);
+        //        if (channelOverride == null)
+        //            return false;
 
-                if (channelOverride.MuteConfig != null)
-                {
-                    var endTime = channelOverride.MuteConfig.EndTime;
-                    if (endTime.HasValue && channelOverride.Muted)
-                        return endTime.Value < DateTimeOffset.Now;
-                }
+        //        if (channelOverride.MuteConfig != null)
+        //        {
+        //            var endTime = channelOverride.MuteConfig.EndTime;
+        //            if (endTime.HasValue && channelOverride.Muted)
+        //                return endTime.Value < DateTimeOffset.Now;
+        //        }
 
-                return channelOverride.Muted;
-            }
-        }
+        //        return channelOverride.Muted;
+        //    }
+        //}
 
-        [JsonIgnore]
-        public bool NotificationMuted => (Muted || (Parent?.Muted ?? false) || (Guild?.Muted ?? false));
+        //[JsonIgnore]
+        //public bool NotificationMuted => (Muted || (Parent?.Muted ?? false) || (Guild?.Muted ?? false));
 
         [JsonIgnore]
         public DiscordReadState ReadState =>
             Discord.ReadStates.TryGetValue(Id, out var state) ? state : Discord.DefaultReadState;
 
-        [JsonIgnore]
-        public bool Unread => ReadState.Unread && !Muted;
+        //[JsonIgnore]
+        //public bool Unread => ReadState.Unread && !Muted;
 
-        [JsonIgnore]
-        public IEnumerable<DiscordUser> ConnectedUsers => Type == ChannelType.Voice ? Users : null;
+        //[JsonIgnore]
+        //public IEnumerable<DiscordUser> ConnectedUsers => Type == ChannelType.Voice ? Users : null;
 
-        [JsonIgnore]
-        public int UserCount => ConnectedUsers?.Count() ?? 0;
+        //[JsonIgnore]
+        //public int UserCount => ConnectedUsers?.Count() ?? 0;
 
         [JsonIgnore]
         public Permissions CurrentPermissions => IsPrivate ? Permissions.Administrator : PermissionsFor(Guild.CurrentMember);

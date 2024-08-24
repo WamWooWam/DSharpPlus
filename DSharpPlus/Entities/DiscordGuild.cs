@@ -32,27 +32,27 @@ namespace DSharpPlus.Entities
         [JsonProperty("icon", NullValueHandling = NullValueHandling.Ignore)]
         public string IconHash { get; internal set; }
 
-        [JsonIgnore]
-        public bool Muted
-        {
-            get
-            {
-                if (!(this.Discord is DiscordClient client))
-                    return false;
+        //[JsonIgnore]
+        //public bool Muted
+        //{
+        //    get
+        //    {
+        //        if (!(this.Discord is DiscordClient client))
+        //            return false;
 
-                if (!client.UserGuildSettings.TryGetValue(this.Id, out var settings) || settings == null)
-                    return false;
+        //        if (!client.UserGuildSettings.TryGetValue(this.Id, out var settings) || settings == null)
+        //            return false;
 
-                if (settings.MuteConfig != null)
-                {
-                    var endTime = settings.MuteConfig.EndTime;
-                    if (endTime.HasValue && settings.Muted)
-                        return endTime.Value < DateTimeOffset.Now;
-                }
+        //        if (settings.MuteConfig != null)
+        //        {
+        //            var endTime = settings.MuteConfig.EndTime;
+        //            if (endTime.HasValue && settings.Muted)
+        //                return endTime.Value < DateTimeOffset.Now;
+        //        }
 
-                return settings.Muted;
-            }
-        }
+        //        return settings.Muted;
+        //    }
+        //}
 
         /// <summary>
         /// Gets the guild icon's url.
@@ -394,19 +394,19 @@ namespace DSharpPlus.Entities
         [JsonIgnore]
         public bool IsSynced { get; set; }
 
-        [JsonIgnore]
-        public bool Unread => !Muted && Channels.Values.Any(r =>
-            (CurrentMember.IsOwner || r.PermissionsFor(CurrentMember).HasPermission(DSharpPlus.Permissions.AccessChannels)) && !r.NotificationMuted && r.ReadState.Unread);
+        //[JsonIgnore]
+        //public bool Unread => !Muted && Channels.Values.Any(r =>
+        //    (CurrentMember.IsOwner || r.PermissionsFor(CurrentMember).HasPermission(DSharpPlus.Permissions.AccessChannels)) && !r.NotificationMuted && r.ReadState.Unread);
 
-        [JsonIgnore]
-        public int MentionCount
-        {
-            get
-            {
-                var v = Channels.Values.Sum(r => r.ReadState.MentionCount);
-                return v == 0 ? -1 : v;
-            }
-        }
+        //[JsonIgnore]
+        //public int MentionCount
+        //{
+        //    get
+        //    {
+        //        var v = Channels.Values.Sum(r => r.ReadState.MentionCount);
+        //        return v == 0 ? -1 : v;
+        //    }
+        //}
 
         internal DiscordGuild()
         {

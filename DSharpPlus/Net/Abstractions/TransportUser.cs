@@ -40,6 +40,9 @@ namespace DSharpPlus.Net.Abstractions
         [JsonProperty("public_flags", NullValueHandling = NullValueHandling.Ignore)]
         public UserFlags? Flags { get; internal set; }
 
+        [JsonProperty("global_name", NullValueHandling = NullValueHandling.Ignore)]
+        public string GlobalName { get; internal set; }
+
         internal TransportUser() { }
 
         internal TransportUser(TransportUser other)
@@ -57,6 +60,7 @@ namespace DSharpPlus.Net.Abstractions
             this.Locale = other.Locale;
             this.Flags = other.Flags;
             this.OAuthFlags = other.OAuthFlags;
+            this.GlobalName = other.GlobalName;
         }
     }
 }

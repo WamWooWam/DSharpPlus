@@ -202,6 +202,7 @@ namespace DSharpPlus
             this._relationshipAdded = new AsyncEvent<RelationshipAddedEventArgs>(EventErrorHandler, "RELATIONSHIP_ADD");
             this._relationshipRemoved = new AsyncEvent<RelationshipRemovedEventArgs>(EventErrorHandler, "RElATIONSHIP_REMOVE");
             this._loggedOut = new AsyncEvent(EventErrorHandler, "LOGGED_OUT");
+            this._readStateUpdated = new AsyncEvent<ReadStateUpdatedEventArgs>(EventErrorHandler, "READ_STATE_UPDTED");
 
             this._guilds.Clear();
             this._presences.Clear();
@@ -447,7 +448,7 @@ namespace DSharpPlus
             this._webSocketClient.ExceptionThrown += SocketOnException;
 
             var gwuri = new QueryUriBuilder(this._gatewayUri)
-                .AddParameter("v", "9")
+                .AddParameter("v", "10")
                 .AddParameter("encoding", "json");
 
             if (this.Configuration.GatewayCompressionLevel == GatewayCompressionLevel.Stream)
@@ -966,12 +967,13 @@ namespace DSharpPlus
                 case "relationship_add":
                     await OnRelationshipAddAsync(dat).ConfigureAwait(false);
                     break;
+
                 case "relationship_remove":
                     await OnRelationshipRemoveAsync(dat).ConfigureAwait(false);
                     break;
 
                 case "channel_unread_update":
-                    OnChannelUnreadUpdate(dat);
+                    await OnChannelUnreadUpdate(dat).ConfigureAwait(false);
                     break;
 
                 case "user_guild_settings_update":
@@ -985,19 +987,21 @@ namespace DSharpPlus
             }
         }
 
-        private void OnChannelUnreadUpdate(JObject dat)
+        private async Task OnChannelUnreadUpdate(JObject dat)
         {
             var readStates = dat["channel_unread_updates"].ToDiscordObject<IEnumerable<DiscordReadState>>();
             foreach (var state in readStates)
             {
                 state.Discord = this;
-                ReadStates.AddOrUpdate(state.Id, state, (id, old) =>
+                var newReadState = ReadStates.AddOrUpdate(state.Id, state, (id, old) =>
                 {
                     old.LastMessageId = state.LastMessageId;
                     old.LastPinTimestamp = state.LastPinTimestamp;
                     old.MentionCount = state.MentionCount;
                     return old;
                 });
+
+                await _readStateUpdated?.InvokeAsync(new ReadStateUpdatedEventArgs(this, newReadState));
             }
         }
 
@@ -1193,7 +1197,7 @@ namespace DSharpPlus
                 await _relationshipRemoved?.InvokeAsync(new RelationshipRemovedEventArgs() { Relationship = rel });
         }
 
-        private Task OnUserGuildSettingsUpdated(JToken json)
+        private async Task OnUserGuildSettingsUpdated(JToken json)
         {
             // TODO: verify if version is always higher mn
             var rel = json.ToObject<DiscordUserGuildSettings>();
@@ -1201,25 +1205,20 @@ namespace DSharpPlus
 
             if (rel.GuildId != null && TryGetCachedGuild(rel.GuildId.Value, out var guild))
             {
-                guild.InvokePropertyChanged("Muted");
-                guild.InvokePropertyChanged("Unread");
-
                 foreach (var channel in guild.Channels.Values)
                 {
-                    channel.InvokePropertyChanged("Muted");
-                    channel.InvokePropertyChanged("Unread");
+                    if (ReadStates.TryGetValue(channel.Id, out var rs))
+                        await _readStateUpdated.InvokeAsync(new ReadStateUpdatedEventArgs(this, rs));
                 }
             }
             else
             {
                 foreach (var channel in PrivateChannels.Values)
                 {
-                    channel.InvokePropertyChanged("Muted");
-                    channel.InvokePropertyChanged("Unread");
+                    if (ReadStates.TryGetValue(channel.Id, out var rs))
+                        await _readStateUpdated.InvokeAsync(new ReadStateUpdatedEventArgs(this, rs));
                 }
             }
-
-            return Task.CompletedTask;
         }
 
 
@@ -1632,19 +1631,11 @@ namespace DSharpPlus
                 presence.InternalUser.Username = usr.Username;
                 presence.InternalUser.Discriminator = usr.Discriminator;
                 presence.InternalUser.AvatarHash = usr.AvatarHash;
-
-                usr.InvokePropertyChanged("Presence");
             }
             else
             {
                 usr = new DiscordUser(presence.InternalUser) { Discord = this };
                 UserCache[usr.Id] = usr;
-            }
-
-            foreach (var guild in this.Guilds.Values)
-            {
-                if (guild.Members.TryGetValue(uid, out var mbr))
-                    mbr.InvokePropertyChanged("Presence");
             }
 
             var ea = new PresenceUpdateEventArgs
@@ -1920,11 +1911,7 @@ namespace DSharpPlus
 
             ReadStates[chn.Id] = state;
 
-            chn.InvokePropertyChanged("ReadState");
-            chn.InvokePropertyChanged("Unread");
-            chn.Guild?.InvokePropertyChanged("MentionCount");
-            chn.Guild?.InvokePropertyChanged("Unread");
-
+            await this._readStateUpdated.InvokeAsync(new ReadStateUpdatedEventArgs(this, state)).ConfigureAwait(false);
             await this._messageAcknowledged.InvokeAsync(new MessageAcknowledgeEventArgs(this) { Message = msg }).ConfigureAwait(false);
         }
 
@@ -1941,28 +1928,23 @@ namespace DSharpPlus
             else
                 message.Channel.LastMessageId = message.Id;
 
-            if (message.Channel?.ReadState != null)
+            if (ReadStates.TryGetValue(message.ChannelId, out var readState))
             {
                 if (message.Author.Id != CurrentUser.Id)
                 {
                     if (message.MentionEveryone || message.MentionedUsers.Any(u => u?.Id == CurrentUser.Id) || message.Channel is DiscordDmChannel)
                     {
-                        message.Channel.ReadState.MentionCount += 1;
-                        message.Channel.Guild?.InvokePropertyChanged("MentionCount");
+                        readState.MentionCount += 1;
                     }
                 }
                 else
                 {
-                    message.Channel.ReadState.MentionCount = 0;
-                    message.Channel.ReadState.LastMessageId = message.Id;
+                    readState.MentionCount = 0;
+                    readState.LastMessageId = message.Id;
                 }
 
-                if (message.Channel.Guild != null)
-                {
-                    message.Channel.Guild.InvokePropertyChanged(nameof(message.Channel.Guild.Unread));
-                }
-
-                message.Channel.InvokePropertyChanged(nameof(message.Channel.ReadState));
+                await _readStateUpdated.InvokeAsync(new ReadStateUpdatedEventArgs(this, readState))
+                    .ConfigureAwait(false);
             }
 
             if (this.Configuration.MessageCacheSize > 0 && message.Channel != null)
@@ -2035,7 +2017,6 @@ namespace DSharpPlus
             }
 
             message._mentionedChannels = mentioned_channels;
-            message.InvokePropertyChanged("");
 
             var ea = new MessageUpdateEventArgs(this)
             {
@@ -2189,10 +2170,7 @@ namespace DSharpPlus
                 UserSettings.GuildPositions = positions;
             }
 
-            InvokePropertyChanged(nameof(UserSettings));
-
             Presences[CurrentUser.Id].Status = json.TryGetValue("status", out var j) ? j.ToDiscordObject<UserStatus>() : Presences[CurrentUser.Id].Status;
-            InvokePropertyChanged(nameof(CurrentUser));
 
             var ea = new UserSettingsUpdateEventArgs(this)
             {
@@ -2312,12 +2290,6 @@ namespace DSharpPlus
                     return old;
                 });
 
-                mbr.InvokePropertyChanged("Roles");
-                mbr.InvokePropertyChanged("Color");
-                mbr.InvokePropertyChanged("ColorBrush");
-                mbr.InvokePropertyChanged("AvatarUrl");
-                mbr.InvokePropertyChanged("DisplayName");
-
                 mbrs.Add(mbr);
             }
 
@@ -2378,7 +2350,6 @@ namespace DSharpPlus
             {
                 react.Count++;
                 react.IsMe |= this.CurrentUser.Id == userId;
-                react.InvokePropertyChanged("");
             }
 
             var ea = new MessageReactionAddEventArgs(this)
@@ -2421,7 +2392,6 @@ namespace DSharpPlus
             {
                 react.Count--;
                 react.IsMe &= this.CurrentUser.Id != userId;
-                react.InvokePropertyChanged("");
 
                 if (msg._reactions != null && react.Count <= 0) // shit happens
                     for (var i = 0; i < msg._reactions.Count; i++)
@@ -2742,7 +2712,7 @@ namespace DSharpPlus
             if (x == null)
             {
             }
-            
+
 
             var resumestr = JsonConvert.SerializeObject(resume_payload);
             await this._webSocketClient.SendMessageAsync(resumestr).ConfigureAwait(false);
@@ -3476,6 +3446,13 @@ namespace DSharpPlus
             remove { _loggedOut.Unregister(value); }
         }
         private AsyncEvent _loggedOut;
+
+        public event AsyncEventHandler<ReadStateUpdatedEventArgs> ReadStateUpdated
+        {
+            add { _readStateUpdated.Register(value); }
+            remove { _readStateUpdated.Unregister(value); }
+        }
+        private AsyncEvent<ReadStateUpdatedEventArgs> _readStateUpdated;
 
 
         internal void EventErrorHandler(string evname, Exception ex)

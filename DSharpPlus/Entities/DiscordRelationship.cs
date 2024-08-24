@@ -39,7 +39,10 @@ namespace DSharpPlus.Entities
 
         public int CompareTo(DiscordRelationship other)
         {
-            return InternalUser?.Username.CompareTo(other.InternalUser?.Username) ?? 0;
+            var name1 = InternalUser?.GlobalName ?? InternalUser?.Username;
+            var name2 = other?.InternalUser?.GlobalName ?? other?.InternalUser?.Username;
+
+            return name1?.CompareTo(name2 ?? "") ?? 0;
         }
     }
 }

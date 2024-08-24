@@ -31,7 +31,7 @@ namespace DSharpPlus.Entities
             this.Discord = user.Discord;
             this.Id = user.Id;
 
-            if (!this.Discord.UserCache.ContainsKey(user.Id))
+            if (this.Discord?.UserCache.ContainsKey(user.Id) == true)
                 this.Discord.UserCache[user.Id] = user;
         }
 
@@ -52,14 +52,14 @@ namespace DSharpPlus.Entities
         /// Gets this member's nickname.
         /// </summary>
         [JsonProperty("nick", NullValueHandling = NullValueHandling.Ignore)]
-        public string Nickname { get => _nickname; internal set => OnPropertySet(ref _nickname, value, nameof(Nickname), nameof(DisplayName)); }
+        public string Nickname { get; internal set; }
 
         /// <summary>
         /// Gets this member's display name.
         /// </summary>
         [JsonIgnore]
         public override string DisplayName
-            => this.Nickname ?? this.Username;
+            => this.Nickname ?? base.DisplayName;
 
         /// <summary>
         /// List of role ids
@@ -112,13 +112,13 @@ namespace DSharpPlus.Entities
         /// If the user is deafened
         /// </summary>
         [JsonProperty("is_deafened", NullValueHandling = NullValueHandling.Ignore)]
-        public bool IsDeafened { get => _isDeafened; internal set => OnPropertySet(ref _isDeafened, value); }
+        public bool IsDeafened { get; internal set; }
 
         /// <summary>
         /// If the user is muted
         /// </summary>
         [JsonProperty("is_muted", NullValueHandling = NullValueHandling.Ignore)]
-        public bool IsMuted { get => _isMuted; internal set => OnPropertySet(ref _isMuted, value); }
+        public bool IsMuted { get; internal set; }
 
         /// <summary>
         /// Gets this member's voice state.
