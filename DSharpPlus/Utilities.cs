@@ -61,6 +61,8 @@ namespace DSharpPlus
             old.Username = usr.Username;
             old.Discriminator = usr.Discriminator;
             old.AvatarHash = usr.AvatarHash;
+            if (!string.IsNullOrWhiteSpace(usr.GlobalName))
+                old.GlobalName = usr.GlobalName; 
             return old;
         }
 
@@ -228,7 +230,7 @@ namespace DSharpPlus
         /// <returns>Calculated Unix time.</returns>
         public static long GetUnixTime(DateTimeOffset dto)
             => dto.ToUnixTimeMilliseconds();
-        
+
         /// <summary>
         /// Converts this <see cref="Permissions"/> into human-readable format.
         /// </summary>

@@ -122,7 +122,7 @@ namespace DSharpPlus
             {
                 // singular owner
 
-                app.Owners = new ReadOnlyCollection<DiscordUser>(new[] { new DiscordUser(tapp.Owner) });
+                app.Owners = new ReadOnlyCollection<DiscordUser>(new[] { new DiscordUser(this, tapp.Owner) });
                 app.Team = null;
             }
             else
@@ -132,7 +132,7 @@ namespace DSharpPlus
                 app.Team = new DiscordTeam(tapp.Team);
 
                 var members = tapp.Team.Members
-                    .Select(x => new DiscordTeamMember(x) { Team = app.Team, User = new DiscordUser(x.User) })
+                    .Select(x => new DiscordTeamMember(x) { Team = app.Team, User = new DiscordUser(this, x.User) })
                     .ToArray();
 
                 var owners = members

@@ -1037,7 +1037,7 @@ namespace DSharpPlus
                 channel._recipients = new List<DiscordUser>();
                 foreach (var xr in recips_raw)
                 {
-                    var xu = new DiscordUser(xr) { Discord = this };
+                    var xu = new DiscordUser(this, xr);
                     xu = this.UserCache.AddOrUpdate(xr.Id, xu, (id, old) => Utilities.UpdateUser(old, xu));
 
                     channel._recipients.Add(xu);
@@ -1088,10 +1088,10 @@ namespace DSharpPlus
                     {
                         var xtm = xj.ToObject<TransportMember>();
 
-                        var xu = new DiscordUser(xtm.User) { Discord = this };
+                        var xu = new DiscordUser(this, xtm.User);
                         xu = this.UserCache.AddOrUpdate(xtm.User.Id, xu, (id, old) => Utilities.UpdateUser(old, xu));
 
-                        guild._members[xtm.User.Id] = new DiscordMember(xtm) { Discord = this, _guild_id = guild.Id };
+                        guild._members[xtm.User.Id] = new DiscordMember(this, xtm) { Discord = this, _guild_id = guild.Id };
                     }
                 }
 
@@ -1121,7 +1121,7 @@ namespace DSharpPlus
                 {
                     relationship.Discord = this;
 
-                    var user = new DiscordUser(relationship.InternalUser) { Discord = this };
+                    var user = new DiscordUser(this, relationship.InternalUser);
                     user = UserCache.AddOrUpdate(relationship.InternalUser.Id, user, (id, old) => Utilities.UpdateUser(old, user));
 
                     if (_relationships.TryGetValue(relationship.Id, out var oldRel))
@@ -1181,7 +1181,7 @@ namespace DSharpPlus
             }
             else
             {
-                var xu = new DiscordUser(rel.InternalUser) { Discord = this };
+                var xu = new DiscordUser(this, rel.InternalUser);
                 xu = UserCache.AddOrUpdate(rel.InternalUser.Id, xu, (id, old) => Utilities.UpdateUser(old, xu));
                 _relationships[rel.Id] = rel;
             }
@@ -1231,7 +1231,7 @@ namespace DSharpPlus
                 var dmChannel = channel as DiscordDmChannel;
 
                 var recips = rawRecipients.ToObject<IEnumerable<TransportUser>>()
-                    .Select(xtu => this.TryGetCachedUserInternal(xtu.Id, out var usr) ? usr : new DiscordUser(xtu) { Discord = this });
+                    .Select(xtu => this.TryGetCachedUserInternal(xtu.Id, out var usr) ? usr : new DiscordUser(this, xtu));
                 dmChannel._recipients = recips.ToList();
 
                 this._privateChannels[dmChannel.Id] = dmChannel;
@@ -1381,16 +1381,11 @@ namespace DSharpPlus
             if (exists)
                 guild = foundGuild;
 
-            if (guild._channels == null)
-                guild._channels = new ConcurrentDictionary<ulong, DiscordChannel>();
-            if (guild._roles == null)
-                guild._roles = new ConcurrentDictionary<ulong, DiscordRole>();
-            if (guild._emojis == null)
-                guild._emojis = new ConcurrentDictionary<ulong, DiscordEmoji>();
-            if (guild._voiceStates == null)
-                guild._voiceStates = new ConcurrentDictionary<ulong, DiscordVoiceState>();
-            if (guild._members == null)
-                guild._members = new ConcurrentDictionary<ulong, DiscordMember>();
+            guild._channels ??= new ConcurrentDictionary<ulong, DiscordChannel>();
+            guild._roles ??= new ConcurrentDictionary<ulong, DiscordRole>();
+            guild._emojis ??= new ConcurrentDictionary<ulong, DiscordEmoji>();
+            guild._voiceStates ??= new ConcurrentDictionary<ulong, DiscordVoiceState>();
+            guild._members ??= new ConcurrentDictionary<ulong, DiscordMember>();
 
             this.UpdateCachedGuild(eventGuild, rawMembers);
 
@@ -1634,7 +1629,7 @@ namespace DSharpPlus
             }
             else
             {
-                usr = new DiscordUser(presence.InternalUser) { Discord = this };
+                usr = new DiscordUser(this, presence.InternalUser);
                 UserCache[usr.Id] = usr;
             }
 
@@ -1646,7 +1641,7 @@ namespace DSharpPlus
                 User = usr,
                 PresenceBefore = old,
                 PresenceAfter = presence,
-                UserBefore = old != null ? new DiscordUser(old.InternalUser) : usr,
+                UserBefore = old != null ? new DiscordUser(this, old.InternalUser) : usr,
                 UserAfter = usr
             };
             await this._presenceUpdated.InvokeAsync(ea).ConfigureAwait(false);
@@ -1654,7 +1649,7 @@ namespace DSharpPlus
 
         internal async Task OnGuildBanAddEventAsync(TransportUser user, DiscordGuild guild)
         {
-            var usr = new DiscordUser(user) { Discord = this };
+            var usr = new DiscordUser(this, user) { Discord = this };
             usr = this.UserCache.AddOrUpdate(user.Id, usr, (id, old) => Utilities.UpdateUser(old, usr));
 
             if (!guild.Members.TryGetValue(user.Id, out var mbr))
@@ -1669,7 +1664,7 @@ namespace DSharpPlus
 
         internal async Task OnGuildBanRemoveEventAsync(TransportUser user, DiscordGuild guild)
         {
-            var usr = new DiscordUser(user) { Discord = this };
+            var usr = new DiscordUser(this, user) { Discord = this };
             usr = this.UserCache.AddOrUpdate(user.Id, usr, (id, old) => Utilities.UpdateUser(old, usr));
 
             if (!guild.Members.TryGetValue(user.Id, out var mbr))
@@ -1713,10 +1708,10 @@ namespace DSharpPlus
 
         internal async Task OnGuildMemberAddEventAsync(TransportMember member, DiscordGuild guild)
         {
-            var usr = new DiscordUser(member.User) { Discord = this };
+            var usr = new DiscordUser(this, member.User) { Discord = this };
             usr = this.UserCache.AddOrUpdate(member.User.Id, usr, (id, old) => Utilities.UpdateUser(old, usr));
 
-            var mbr = new DiscordMember(member)
+            var mbr = new DiscordMember(this, member)
             {
                 Discord = this,
                 _guild_id = guild.Id
@@ -1736,7 +1731,7 @@ namespace DSharpPlus
         internal async Task OnGuildMemberRemoveEventAsync(TransportUser user, DiscordGuild guild)
         {
             if (!guild._members.TryRemove(user.Id, out var mbr))
-                mbr = new DiscordMember(new DiscordUser(user)) { Discord = this, _guild_id = guild.Id };
+                mbr = new DiscordMember(new DiscordUser(this, user)) { Discord = this, _guild_id = guild.Id };
             guild.MemberCount--;
 
             var ea = new GuildMemberRemoveEventArgs(this)
@@ -1749,7 +1744,7 @@ namespace DSharpPlus
 
         internal async Task OnGuildMemberUpdateEventAsync(TransportUser user, DiscordGuild guild, IEnumerable<ulong> roles, string nick)
         {
-            var usr = new DiscordUser(user) { Discord = this };
+            var usr = new DiscordUser(this, user) { Discord = this };
             usr = this.UserCache.AddOrUpdate(user.Id, usr, (id, old) => Utilities.UpdateUser(old, usr));
 
             if (!guild.Members.TryGetValue(user.Id, out var mbr))
@@ -1976,7 +1971,7 @@ namespace DSharpPlus
 
                 if (author != null)
                 {
-                    var usr = new DiscordUser(author) { Discord = this };
+                    var usr = new DiscordUser(this, author) { Discord = this };
                     usr = this.UserCache.AddOrUpdate(author.Id, usr, (id, old) => Utilities.UpdateUser(old, usr));
 
                     if (guild != null)
@@ -2155,7 +2150,7 @@ namespace DSharpPlus
 
         internal async Task OnUserSettingsUpdateEventAsync(JObject json)
         {
-            var usr = new DiscordUser(json.ToObject<TransportUser>()) { Discord = this };
+            var usr = new DiscordUser(this, json.ToObject<TransportUser>()) { Discord = this };
 
             if (json.TryGetValue("theme", out var t))
             {
@@ -2268,9 +2263,9 @@ namespace DSharpPlus
 
             foreach (var xtm in members)
             {
-                var mbr = new DiscordMember(xtm) { Discord = this, _guild_id = guild.Id };
+                var mbr = new DiscordMember(this, xtm) { Discord = this, _guild_id = guild.Id };
 
-                var user = new DiscordUser(xtm.User) { Discord = this };
+                var user = new DiscordUser(this, xtm.User) { Discord = this };
                 user = UserCache.AddOrUpdate(user.Id, user, (id, old) => Utilities.UpdateUser(old, user));
 
                 mbr = guild._members.AddOrUpdate(mbr.Id, mbr, (id, old) =>
@@ -2297,7 +2292,7 @@ namespace DSharpPlus
             var ea = new GuildMembersChunkEventArgs(this)
             {
                 Guild = guild,
-                Members = new ReadOnlySet<DiscordMember>(mbrs)
+                Members = mbrs.ToDictionary(k => k.Id)
             };
             await this._guildMembersChunked.InvokeAsync(ea).ConfigureAwait(false);
         }
@@ -2782,10 +2777,10 @@ namespace DSharpPlus
                 {
                     var xtm = xj.ToObject<TransportMember>();
 
-                    var xu = new DiscordUser(xtm.User) { Discord = this };
+                    var xu = new DiscordUser(this, xtm.User) { Discord = this };
                     _ = this.UserCache.AddOrUpdate(xtm.User.Id, xu, (id, old) => Utilities.UpdateUser(old, xu));
 
-                    guild._members[xtm.User.Id] = new DiscordMember(xtm) { Discord = this, _guild_id = guild.Id };
+                    guild._members[xtm.User.Id] = new DiscordMember(this, xtm) { Discord = this, _guild_id = guild.Id };
                 }
             }
 

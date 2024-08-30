@@ -61,9 +61,11 @@ namespace DSharpPlus.Net
                 ret = discordMessage;
             }
 
+            ret.Discord = this.Discord;
+
             var guild = ret.Channel?.Guild;
 
-            var newUser = new DiscordUser(author) { Discord = this.Discord };
+            var newUser = new DiscordUser(this.Discord, author) { Discord = this.Discord };
             if (!this.Discord.UserCache.TryGetValue(author.Id, out var usr))
                 usr = this.Discord.UserCache[author.Id] = newUser;
             else if (string.IsNullOrWhiteSpace(usr.Username) || string.IsNullOrWhiteSpace(usr.Discriminator)) // skeleton objects :HYPERS:
@@ -236,7 +238,7 @@ namespace DSharpPlus.Net
             {
                 if (!this.Discord.TryGetCachedUserInternal(xb.RawUser.Id, out var usr))
                 {
-                    usr = new DiscordUser(xb.RawUser) { Discord = this.Discord };
+                    usr = new DiscordUser(this.Discord, xb.RawUser) { Discord = this.Discord };
                     usr = this.Discord.UserCache.AddOrUpdate(usr.Id, usr, (id, old) => Utilities.UpdateUser(old, usr));
                 }
 
@@ -307,8 +309,7 @@ namespace DSharpPlus.Net
             var res = await this.DoRequestAsync(this.Discord, bucket, url, RestRequestMethod.PUT, payload: DiscordJson.SerializeObject(pld)).ConfigureAwait(false);
 
             var tm = JsonConvert.DeserializeObject<TransportMember>(res.Response);
-
-            return new DiscordMember(tm) { Discord = this.Discord, _guild_id = guild_id };
+            return new DiscordMember(this.Discord, tm) { Discord = this.Discord, _guild_id = guild_id };
         }
 
         internal async Task<IReadOnlyList<TransportMember>> ListGuildMembersAsync(ulong guild_id, int? limit, ulong? after)
@@ -1150,7 +1151,7 @@ namespace DSharpPlus.Net
             var res = await this.DoRequestAsync(this.Discord, bucket, url, RestRequestMethod.GET).ConfigureAwait(false);
 
             var user_raw = JsonConvert.DeserializeObject<TransportUser>(res.Response);
-            var duser = new DiscordUser(user_raw) { Discord = this.Discord };
+            var duser = new DiscordUser(this.Discord, user_raw) { Discord = this.Discord };
 
             return duser;
         }
@@ -1165,10 +1166,10 @@ namespace DSharpPlus.Net
 
             var tm = JsonConvert.DeserializeObject<TransportMember>(res.Response);
 
-            var usr = new DiscordUser(tm.User) { Discord = this.Discord };
+            var usr = new DiscordUser(this.Discord, tm.User) { Discord = this.Discord };
             usr = this.Discord.UserCache.AddOrUpdate(tm.User.Id, usr, (id, old) => Utilities.UpdateUser(old, usr));
 
-            return new DiscordMember(tm)
+            return new DiscordMember(this.Discord, tm)
             {
                 Discord = this.Discord,
                 _guild_id = guild_id
@@ -1943,7 +1944,7 @@ namespace DSharpPlus.Net
             var reacters = new List<DiscordUser>();
             foreach (var xr in reacters_raw)
             {
-                var usr = new DiscordUser(xr) { Discord = this.Discord };
+                var usr = new DiscordUser(this.Discord, xr) { Discord = this.Discord };
                 usr = this.Discord.UserCache.AddOrUpdate(xr.Id, usr, (id, old) => Utilities.UpdateUser(old, usr));
 
                 reacters.Add(usr);
@@ -1999,7 +2000,7 @@ namespace DSharpPlus.Net
                 {
                     if (!users.ContainsKey(xtu.Id))
                     {
-                        var user = gld != null && gld.Members.TryGetValue(xtu.Id, out var member) ? member : new DiscordUser(xtu) { Discord = this.Discord }; 
+                        var user = gld != null && gld.Members.TryGetValue(xtu.Id, out var member) ? member : new DiscordUser(this.Discord, xtu) { Discord = this.Discord }; 
                         users[user.Id] = user;
                     }
 
@@ -2028,7 +2029,7 @@ namespace DSharpPlus.Net
 
             var xtu = emoji_raw["user"]?.ToObject<TransportUser>();
             if (xtu != null)
-                emoji.User = gld != null && gld.Members.TryGetValue(xtu.Id, out var member) ? member : new DiscordUser(xtu) { Discord = this.Discord };
+                emoji.User = gld != null && gld.Members.TryGetValue(xtu.Id, out var member) ? member : new DiscordUser(this.Discord, xtu) { Discord = this.Discord };
 
             return emoji;
         }
@@ -2060,7 +2061,7 @@ namespace DSharpPlus.Net
 
             var xtu = emoji_raw["user"]?.ToObject<TransportUser>();
             if (xtu != null)
-                emoji.User = gld != null && gld.Members.TryGetValue(xtu.Id, out var member) ? member : new DiscordUser(xtu) { Discord = this.Discord };
+                emoji.User = gld != null && gld.Members.TryGetValue(xtu.Id, out var member) ? member : new DiscordUser(this.Discord, xtu) { Discord = this.Discord };
             else
                 emoji.User = this.Discord.CurrentUser;
 
@@ -2093,7 +2094,7 @@ namespace DSharpPlus.Net
 
             var xtu = emoji_raw["user"]?.ToObject<TransportUser>();
             if (xtu != null)
-                emoji.User = gld != null && gld.Members.TryGetValue(xtu.Id, out var member) ? member : new DiscordUser(xtu) { Discord = this.Discord };
+                emoji.User = gld != null && gld.Members.TryGetValue(xtu.Id, out var member) ? member : new DiscordUser(this.Discord, xtu) { Discord = this.Discord };
 
             return emoji;
         }

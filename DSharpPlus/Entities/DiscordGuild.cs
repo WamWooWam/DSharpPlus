@@ -797,10 +797,10 @@ namespace DSharpPlus.Entities
 
                 foreach (var xtm in tms)
                 {
-                    var usr = new DiscordUser(xtm.User) { Discord = this.Discord };
+                    var usr = new DiscordUser(this.Discord, xtm.User) { Discord = this.Discord };
                     usr = this.Discord.UserCache.AddOrUpdate(xtm.User.Id, usr, (id, old) => Utilities.UpdateUser(old, usr));
 
-                    recmbr.Add(new DiscordMember(xtm) { Discord = this.Discord, _guild_id = this.Id });
+                    recmbr.Add(new DiscordMember(this.Discord, xtm) { Discord = this.Discord, _guild_id = this.Id });
                 }
 
                 var tm = tms.LastOrDefault();
@@ -906,7 +906,7 @@ namespace DSharpPlus.Entities
                     Discriminator = xau.Discriminator,
                     AvatarHash = xau.AvatarHash
                 };
-                var xu = new DiscordUser(xtu) { Discord = this.Discord };
+                var xu = new DiscordUser(this.Discord, xtu) { Discord = this.Discord };
                 xu = this.Discord.UserCache.AddOrUpdate(xu.Id, xu, (id, old) => Utilities.UpdateUser(old, xu));
             }
 

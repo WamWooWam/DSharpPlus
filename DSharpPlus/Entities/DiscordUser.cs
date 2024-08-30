@@ -17,8 +17,10 @@ namespace DSharpPlus.Entities
         private string _globalName;
 
         internal DiscordUser() { }
-        internal DiscordUser(TransportUser transport)
+        internal DiscordUser(BaseDiscordClient client, TransportUser transport)
         {
+            this.Discord = client;
+
             this.Id = transport.Id;
             this.Username = transport.Username;
             this.Discriminator = transport.Discriminator;

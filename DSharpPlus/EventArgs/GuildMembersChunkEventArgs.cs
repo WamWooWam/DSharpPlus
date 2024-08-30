@@ -16,7 +16,7 @@ namespace DSharpPlus.EventArgs
         /// <summary>
         /// Gets a collection containing the members in the received chunk.
         /// </summary>
-        public IReadOnlyCollection<DiscordMember> Members { get; internal set; }
+        public IReadOnlyDictionary<ulong, DiscordMember> Members { get; internal set; }
 
         internal GuildMembersChunkEventArgs(DiscordClient client) : base(client) { }
     }

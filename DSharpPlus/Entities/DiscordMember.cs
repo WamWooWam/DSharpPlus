@@ -7,6 +7,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using DSharpPlus.Net.Abstractions;
 using DSharpPlus.Net.Models;
+using System.Diagnostics;
 
 namespace DSharpPlus.Entities
 {
@@ -35,8 +36,11 @@ namespace DSharpPlus.Entities
                 this.Discord.UserCache[user.Id] = user;
         }
 
-        internal DiscordMember(TransportMember mbr) : this()
+        internal DiscordMember(BaseDiscordClient client, TransportMember mbr) : this()
         {
+            Debug.Assert(client != null);
+
+            this.Discord = client;
             this.Id = mbr.User.Id;
             this.IsDeafened = mbr.IsDeafened;
             this.IsMuted = mbr.IsMuted;

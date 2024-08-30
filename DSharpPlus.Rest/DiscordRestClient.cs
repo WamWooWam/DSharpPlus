@@ -200,7 +200,7 @@ namespace DSharpPlus
                     if (this.UserCache.ContainsKey(xtm.User.Id))
                         continue;
 
-                    var usr = new DiscordUser(xtm.User) { Discord = this };
+                    var usr = new DiscordUser(this, xtm.User) { Discord = this };
                     this.UserCache.AddOrUpdate(xtm.User.Id, usr, (id, old) =>
                     {
                         old.Username = usr.Username;
@@ -211,7 +211,7 @@ namespace DSharpPlus
                     });
                 }
 
-                recmbr.AddRange(tms.Select(xtm => new DiscordMember(xtm) { Discord = this, _guild_id = guild_id }));
+                recmbr.AddRange(tms.Select(xtm => new DiscordMember(this, xtm) { Discord = this, _guild_id = guild_id }));
             }
 
             return new ReadOnlyCollection<DiscordMember>(recmbr);
@@ -635,7 +635,7 @@ namespace DSharpPlus
         /// <param name="base64_avatar">New avatar (base64)</param>
         /// <returns></returns>
         public async Task<DiscordUser> ModifyCurrentUserAsync(string username, string base64_avatar)
-            => new DiscordUser(await ApiClient.ModifyCurrentUserAsync(username, base64_avatar).ConfigureAwait(false)) { Discord = this };
+            => new DiscordUser(this, await ApiClient.ModifyCurrentUserAsync(username, base64_avatar).ConfigureAwait(false)) { Discord = this };
 
         /// <summary>
         /// Modifies current user
@@ -650,7 +650,7 @@ namespace DSharpPlus
                 using (var imgtool = new ImageTool(avatar))
                     av64 = imgtool.GetBase64();
 
-            return new DiscordUser(await ApiClient.ModifyCurrentUserAsync(username, av64).ConfigureAwait(false)) { Discord = this };
+            return new DiscordUser(this, await ApiClient.ModifyCurrentUserAsync(username, av64).ConfigureAwait(false)) { Discord = this };
         }
 
         /// <summary>
