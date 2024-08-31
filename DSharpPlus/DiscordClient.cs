@@ -159,6 +159,7 @@ namespace DSharpPlus
             this._dmChannelCreated = new AsyncEvent<DmChannelCreateEventArgs>(this.EventErrorHandler, "DM_CHANNEL_CREATED");
             this._channelUpdated = new AsyncEvent<ChannelUpdateEventArgs>(this.EventErrorHandler, "CHANNEL_UPDATED");
             this._channelDeleted = new AsyncEvent<ChannelDeleteEventArgs>(this.EventErrorHandler, "CHANNEL_DELETED");
+            this._channelUnreadUpdate = new AsyncEvent<ChannelUnreadUpdateEventArgs>(this.EventErrorHandler, "CHANNEL_UNREAD_UPDATED");
             this._dmChannelDeleted = new AsyncEvent<DmChannelDeleteEventArgs>(this.EventErrorHandler, "DM_CHANNEL_DELETED");
             this._channelPinsUpdated = new AsyncEvent<ChannelPinsUpdateEventArgs>(this.EventErrorHandler, "CHANNEL_PINS_UPDATEED");
             this._guildCreated = new AsyncEvent<GuildCreateEventArgs>(this.EventErrorHandler, "GUILD_CREATED");
@@ -989,6 +990,8 @@ namespace DSharpPlus
 
         private async Task OnChannelUnreadUpdate(JObject dat)
         {
+            var readStateDict = new Dictionary<ulong, DiscordReadState>();
+            var guildId = dat["guid_id"]?.ToObject<ulong?>();
             var readStates = dat["channel_unread_updates"].ToDiscordObject<IEnumerable<DiscordReadState>>();
             foreach (var state in readStates)
             {
@@ -1001,8 +1004,11 @@ namespace DSharpPlus
                     return old;
                 });
 
-                await _readStateUpdated?.InvokeAsync(new ReadStateUpdatedEventArgs(this, newReadState));
+                readStateDict.Add(state.Id, state);
             }
+
+            var ev = new ChannelUnreadUpdateEventArgs(this) { GuildId = guildId, ReadStates = readStateDict };
+            await this._channelUnreadUpdate.InvokeAsync(ev);
         }
 
         #region Events
@@ -3449,6 +3455,13 @@ namespace DSharpPlus
         }
         private AsyncEvent<ReadStateUpdatedEventArgs> _readStateUpdated;
 
+
+        public event AsyncEventHandler<ChannelUnreadUpdateEventArgs> ChannelUnreadUpdated
+        {
+            add { _channelUnreadUpdate.Register(value); }
+            remove { _channelUnreadUpdate.Unregister(value); }
+        }
+        private AsyncEvent<ChannelUnreadUpdateEventArgs> _channelUnreadUpdate;
 
         internal void EventErrorHandler(string evname, Exception ex)
         {
