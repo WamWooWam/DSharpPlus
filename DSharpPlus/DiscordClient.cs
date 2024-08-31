@@ -991,7 +991,7 @@ namespace DSharpPlus
         private async Task OnChannelUnreadUpdate(JObject dat)
         {
             var readStateDict = new Dictionary<ulong, DiscordReadState>();
-            var guildId = dat["guid_id"]?.ToObject<ulong?>();
+            var guildId = dat["guild_id"]?.ToObject<ulong?>();
             var readStates = dat["channel_unread_updates"].ToDiscordObject<IEnumerable<DiscordReadState>>();
             foreach (var state in readStates)
             {
